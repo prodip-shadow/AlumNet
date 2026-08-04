@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -8,6 +9,7 @@ const authRoutes = require('./routes/auth.route');
 const facultyRoutes = require('./routes/faculty.route')
 const departmentRoutes = require('./routes/department.route');
 const verificationRoutes = require('./routes/verification.route');
+const profileRoutes = require('./routes/profile.route');
 
 
 
@@ -35,6 +37,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/faculties', facultyRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/verification', verificationRoutes);
+app.use('/api/profile', profileRoutes);
 
 
 module.exports = app;
+

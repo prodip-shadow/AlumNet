@@ -1,3 +1,4 @@
+
 const facultyModel = require('../models/faculty.model');
 
 
@@ -152,3 +153,4 @@ module.exports = {
   updateFaculty,
   deleteFaculty,
 };
+

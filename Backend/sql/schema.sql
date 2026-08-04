@@ -1,3 +1,4 @@
+
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
@@ -92,4 +93,122 @@ CREATE TABLE verification_applications (
 
     FOREIGN KEY (reviewedByUserId)
         REFERENCES users(id)
+);
+
+
+
+CREATE TABLE student_profiles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    userId INT NOT NULL UNIQUE,
+
+    district VARCHAR(100) NOT NULL,
+
+    universityId VARCHAR(50) NOT NULL,
+
+    registrationNumber VARCHAR(50) NOT NULL,
+
+    facultyId INT NOT NULL,
+
+    departmentId INT DEFAULT NULL,
+
+    session VARCHAR(20) NOT NULL,
+
+    currentSemester VARCHAR(20) NOT NULL,
+
+    expectedGraduationYear INT DEFAULT NULL,
+
+    bio TEXT DEFAULT NULL,
+
+    careerInterests VARCHAR(300) DEFAULT NULL,
+
+    githubLink VARCHAR(200) DEFAULT NULL,
+
+    linkedinLink VARCHAR(200) DEFAULT NULL,
+
+    facebookLink VARCHAR(200) DEFAULT NULL,
+
+    portfolioLink VARCHAR(200) DEFAULT NULL,
+
+    codeforcesLink VARCHAR(200) DEFAULT NULL,
+
+    codechefLink VARCHAR(200) DEFAULT NULL,
+
+    leetcodeLink VARCHAR(200) DEFAULT NULL,
+
+    hackerrankLink VARCHAR(200) DEFAULT NULL,
+
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updatedAt DATETIME DEFAULT NULL,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (facultyId)
+        REFERENCES faculties(id),
+
+    FOREIGN KEY (departmentId)
+        REFERENCES departments(id)
+);
+
+
+
+CREATE TABLE alumni_profiles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    userId INT NOT NULL UNIQUE,
+
+    district VARCHAR(100) NOT NULL,
+
+    universityId VARCHAR(50) NOT NULL,
+
+    registrationNumber VARCHAR(50) NOT NULL,
+
+    facultyId INT NOT NULL,
+
+    departmentId INT DEFAULT NULL,
+
+    session VARCHAR(20) NOT NULL,
+
+    graduationYear INT NOT NULL,
+
+    bio TEXT DEFAULT NULL,
+
+    currentPosition VARCHAR(150) DEFAULT NULL,
+
+    currentCompany VARCHAR(150) DEFAULT NULL,
+
+    currentLocation VARCHAR(150) DEFAULT NULL,
+
+    githubLink VARCHAR(200) DEFAULT NULL,
+
+    linkedinLink VARCHAR(200) DEFAULT NULL,
+
+    facebookLink VARCHAR(200) DEFAULT NULL,
+
+    personalWebsite VARCHAR(200) DEFAULT NULL,
+
+    contactEmail VARCHAR(150) DEFAULT NULL,
+
+    whatsappNumber VARCHAR(30) DEFAULT NULL,
+
+    preferredContactMethod VARCHAR(30) DEFAULT NULL,
+
+    visibleContactMethods VARCHAR(200) DEFAULT NULL,
+
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updatedAt DATETIME DEFAULT NULL,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (facultyId)
+        REFERENCES faculties(id),
+
+    FOREIGN KEY (departmentId)
+        REFERENCES departments(id)
 );

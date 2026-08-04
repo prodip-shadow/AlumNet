@@ -1,5 +1,7 @@
+
 const verificationModel = require('../models/verification.model');
 const userModel = require('../models/user.model');
+const profileModel = require('../models/profile.model');
 
 // Apply Verification
 const applyVerification = (req, res) => {
@@ -180,24 +182,81 @@ const approveVerification = (req, res) => {
           });
         }
 
-        userModel.updateUserRole(
-          application.userId,
-          application.applicationType,
-          (err) => {
-            if (err) {
-              return res.status(500).json({
-                success: false,
-                message: 'Server Error',
-              });
-            }
+     userModel.updateUserRole(
+       application.userId,
+       application.applicationType,
+       (err) => {
+         if (err) {
+           return res.status(500).json({
+             success: false,
+             message: 'Server Error',
+           });
+         }
 
-            return res.status(200).json({
-              success: true,
-              message: 'Verification approved successfully',
-            });
-          },
-        );
+         if (application.applicationType === 'STUDENT') {
+           profileModel.createStudentProfile(
+             [
+               application.userId,
+               application.district,
+               application.universityId,
+               application.registrationNumber,
+               application.facultyId,
+               application.departmentId,
+               application.session,
+               application.currentSemester,
+               null,
+             ],
+             (err) => {
+               if (err) {
+                 return res.status(500).json({
+                   success: false,
+                   message: 'Server Error',
+                 });
+               }
+
+               return res.status(200).json({
+                 success: true,
+                 message: 'Verification approved successfully',
+               });
+             },
+           );
+
+           return;
+         }
+
+         profileModel.createAlumniProfile(
+           [
+             application.userId,
+             application.district,
+             application.universityId,
+             application.registrationNumber,
+             application.facultyId,
+             application.departmentId,
+             application.session,
+             application.graduationYear,
+           ],
+           (err) => {
+             if (err) {
+               return res.status(500).json({
+                 success: false,
+                 message: 'Server Error',
+               });
+             }
+
+             return res.status(200).json({
+               success: true,
+               message: 'Verification approved successfully',
+             });
+           },
+         );
+       },
+     );
+
+
+
       },
+
+
     );
 
 
@@ -212,7 +271,7 @@ const approveVerification = (req, res) => {
 // Reject Verification
 const rejectVerification = (req, res) => {
   const { id } = req.params;
-  const { rejectionReason } = req.body;
+  const { rejectionReason } = req.body || {};
 
   const reviewedByUserId = req.user.id;
 
@@ -321,3 +380,4 @@ module.exports = {
   deleteVerificationApplication,
   deleteAllVerificationApplications,
 };
+

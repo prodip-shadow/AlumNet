@@ -1,3 +1,4 @@
+
 const { v2: cloudinary } = require('cloudinary');
 
 cloudinary.config({
@@ -7,3 +8,4 @@ cloudinary.config({
 });
 
 module.exports = cloudinary;
+

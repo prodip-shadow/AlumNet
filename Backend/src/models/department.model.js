@@ -1,3 +1,4 @@
+
 const db = require('../config/db');
 
 // Create Department
@@ -87,3 +88,4 @@ module.exports = {
   updateDepartment,
   deleteDepartment,
 };
+

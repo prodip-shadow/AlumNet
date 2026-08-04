@@ -1,3 +1,4 @@
+
 const cloudinary = require('../config/cloudinary');
 const streamifier = require('streamifier');
 
@@ -21,3 +22,4 @@ const uploadToCloudinary = (fileBuffer, folder) => {
 };
 
 module.exports = uploadToCloudinary;
+

@@ -1,3 +1,4 @@
+
 const departmentModel = require('../models/department.model');
 
 // Create Department
@@ -157,3 +158,4 @@ module.exports = {
   updateDepartment,
   deleteDepartment,
 };
+

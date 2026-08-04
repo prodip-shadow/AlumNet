@@ -1,3 +1,4 @@
+
 const db = require('../config/db');
 
 // Create Faculty

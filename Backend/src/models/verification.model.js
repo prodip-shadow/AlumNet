@@ -1,3 +1,4 @@
+
 const db = require('../config/db');
 
 // Create Verification Application
@@ -109,3 +110,4 @@ module.exports = {
   deleteVerificationApplication,
   deleteAllVerificationApplications,
 };
+

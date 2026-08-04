@@ -1,3 +1,4 @@
+
 const db = require('../config/db');
 
 // Create User
@@ -79,3 +80,4 @@ module.exports = {
   getUserByRefreshToken,
   updateUserRole,
 };
+

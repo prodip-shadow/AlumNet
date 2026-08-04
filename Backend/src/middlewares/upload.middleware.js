@@ -1,3 +1,4 @@
+
 const multer = require('multer');
 
 const uploadToCloudinary = require('../services/cloudinary.service');
@@ -50,3 +51,4 @@ const uploadSingleImage = (fieldName) => {
 module.exports = {
   uploadSingleImage,
 };
+

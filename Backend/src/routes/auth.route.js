@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 
@@ -20,3 +21,4 @@ router.get('/me', verifyToken, authController.me);
 
 
 module.exports = router;
+
