@@ -66,4 +66,5 @@ module.exports = {
   getUserById,
   saveRefreshToken,
   clearRefreshToken,
+  getUserByRefreshToken,
 };

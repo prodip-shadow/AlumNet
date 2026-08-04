@@ -258,4 +258,5 @@ module.exports = {
   login,
   me,
   logout,
+  refreshToken,
 };
