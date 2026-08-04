@@ -12,7 +12,6 @@ const createUser = (data, callback) => {
 // Get User By Email
 const getUserByEmail = (email, callback) => {
   const sql = `SELECT * FROM users WHERE email = ?`;
-
   db.query(sql, [email], callback);
 };
 
@@ -59,6 +58,17 @@ const getUserByRefreshToken = (refreshToken, callback) => {
 };
 
 
+// Update User Role
+const updateUserRole = (id, role, callback) => {
+  const sql = `
+    UPDATE users
+    SET role = ?
+    WHERE id = ?
+  `;
+
+  db.query(sql, [role, id], callback);
+};
+
 
 module.exports = {
   createUser,
@@ -67,4 +77,5 @@ module.exports = {
   saveRefreshToken,
   clearRefreshToken,
   getUserByRefreshToken,
+  updateUserRole,
 };

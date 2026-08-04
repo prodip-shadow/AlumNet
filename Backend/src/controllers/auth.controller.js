@@ -66,7 +66,7 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-
+  
   userModel.getUserByEmail(email, async (err, result) => {
     if (err) {
       return res.status(500).json({
