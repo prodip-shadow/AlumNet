@@ -37,6 +37,21 @@ const applyVerification = (req, res) => {
     });
   }
 
+  if (applicationType === 'STUDENT' && !currentSemester) {
+    return res.status(400).json({
+      success: false,
+      message: 'Current semester is required for student verification',
+    });
+  }
+
+  if (applicationType === 'ALUMNI' && !graduationYear) {
+    return res.status(400).json({
+      success: false,
+      message: 'Graduation year is required for alumni verification',
+    });
+  }
+
+
 
   verificationModel.getVerificationApplicationByUserId(
     userId,

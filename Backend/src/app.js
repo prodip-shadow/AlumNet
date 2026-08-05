@@ -12,6 +12,9 @@ const verificationRoutes = require('./routes/verification.route');
 const profileRoutes = require('./routes/profile.route');
 const skillRoutes = require('./routes/skill.route');
 const projectRoutes = require('./routes/project.route');
+const postRoutes = require('./routes/post.route');
+const postLikeRoutes = require('./routes/postLike.route');
+
 
 
 
@@ -42,6 +45,8 @@ app.use('/api/verification', verificationRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/posts', postLikeRoutes);
 
 
 module.exports = app;

@@ -23,6 +23,12 @@ router.get(
 );
 
 router.get(
+  '/user/:userId',
+  verifyToken,
+  projectController.getProjectsByUserId,
+);
+
+router.get(
   '/:id',
   verifyToken,
   allowRoles('STUDENT', 'ALUMNI'),

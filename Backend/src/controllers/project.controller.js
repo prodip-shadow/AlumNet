@@ -218,10 +218,30 @@ const deleteProject = (req, res) => {
   });
 };
 
+// Get Projects By User Id (Public)
+const getProjectsByUserId = (req, res) => {
+  const { userId } = req.params;
+
+  projectModel.getProjectsByUserId(userId, (err, result) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: 'Server Error',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      projects: result,
+    });
+  });
+};
+
 module.exports = {
   createProject,
   getMyProjects,
   getProjectById,
+  getProjectsByUserId,
   updateProject,
   deleteProject,
 };

@@ -257,3 +257,38 @@ CREATE TABLE projects (
         REFERENCES users(id)
         ON DELETE CASCADE
 );
+
+CREATE TABLE posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    userId INT NOT NULL,
+
+    content TEXT NOT NULL,
+
+    imageUrl VARCHAR(500) DEFAULT NULL,
+
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    updatedAt DATETIME DEFAULT NULL,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+
+CREATE TABLE post_likes (
+    postId INT NOT NULL,
+    userId INT NOT NULL,
+
+
+    PRIMARY KEY(userId, postId),
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (postId)
+        REFERENCES posts(id)
+        ON DELETE CASCADE
+);
