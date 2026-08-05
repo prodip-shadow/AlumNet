@@ -212,3 +212,48 @@ CREATE TABLE alumni_profiles (
     FOREIGN KEY (departmentId)
         REFERENCES departments(id)
 );
+
+
+CREATE TABLE skills (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE user_skills (
+    userId INT NOT NULL,
+
+    skillId INT NOT NULL,
+
+    PRIMARY KEY (userId, skillId),
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (skillId)
+        REFERENCES skills(id)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE projects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    userId INT NOT NULL,
+
+    name VARCHAR(150) NOT NULL,
+
+    description TEXT NOT NULL,
+
+    imageUrl VARCHAR(500) DEFAULT NULL,
+
+    githubLink VARCHAR(200) DEFAULT NULL,
+
+    liveLink VARCHAR(200) DEFAULT NULL,
+
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);

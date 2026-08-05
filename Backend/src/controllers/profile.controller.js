@@ -1,5 +1,101 @@
-
 const profileModel = require('../models/profile.model');
+const skillModel = require('../models/skill.model');
+
+// Helper Functions
+const saveUserSkills = (userId, skills, res) => {
+  if (!Array.isArray(skills)) {
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+    });
+  }
+  const uniqueSkills = [...new Set(skills)];
+
+  if (!uniqueSkills.every((id) => Number.isInteger(id) && id > 0)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid skill selected',
+    });
+  }
+
+  skillModel.getSkillsByIds(uniqueSkills, (err, result) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: 'Server Error',
+      });
+    }
+
+    if (result.length !== uniqueSkills.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid skill selected',
+      });
+    }
+
+    skillModel.deleteUserSkills(userId, (err) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: 'Server Error',
+        });
+      }
+
+      if (uniqueSkills.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: 'Profile updated successfully',
+        });
+      }
+
+      let completed = 0;
+      let hasError = false;
+
+      uniqueSkills.forEach((skillId) => {
+        skillModel.addUserSkill(userId, skillId, (err) => {
+          if (hasError) return;
+
+          if (err) {
+            hasError = true;
+
+            return res.status(500).json({
+              success: false,
+              message: 'Server Error',
+            });
+          }
+
+          completed++;
+
+          if (completed === uniqueSkills.length) {
+            return res.status(200).json({
+              success: true,
+              message: 'Profile updated successfully',
+            });
+          }
+        });
+      });
+    });
+  });
+};
+
+const sendProfileResponse = (userId, profile, res) => {
+  skillModel.getUserSkills(userId, (err, skillsResult) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: 'Server Error',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      profile,
+      skills: skillsResult,
+    });
+  });
+};
+
+
 
 // Get My Profile
 const getMyProfile = (req, res) => {
@@ -21,10 +117,7 @@ const getMyProfile = (req, res) => {
         });
       }
 
-      return res.status(200).json({
-        success: true,
-        profile: result[0],
-      });
+     return sendProfileResponse(user.id, result[0], res);
     });
 
     return;
@@ -46,10 +139,7 @@ const getMyProfile = (req, res) => {
         });
       }
 
-      return res.status(200).json({
-        success: true,
-        profile: result[0],
-      });
+      return sendProfileResponse(user.id, result[0], res);
     });
 
     return;
@@ -77,21 +167,33 @@ const updateMyProfile = (req, res) => {
       codechefLink,
       leetcodeLink,
       hackerrankLink,
+      skills,
     } = req.body;
+
+
+    const cleanGithubLink = githubLink?.trim() || null;
+    const cleanLinkedinLink = linkedinLink?.trim() || null;
+    const cleanFacebookLink = facebookLink?.trim() || null;
+
+    const cleanPortfolioLink = portfolioLink?.trim() || null;
+    const cleanCodeforcesLink = codeforcesLink?.trim() || null;
+    const cleanCodechefLink = codechefLink?.trim() || null;
+    const cleanLeetcodeLink = leetcodeLink?.trim() || null;
+    const cleanHackerrankLink = hackerrankLink?.trim() || null;
 
     profileModel.updateStudentProfile(
       user.id,
       [
         bio,
         careerInterests,
-        githubLink,
-        linkedinLink,
-        facebookLink,
-        portfolioLink,
-        codeforcesLink,
-        codechefLink,
-        leetcodeLink,
-        hackerrankLink,
+        cleanGithubLink,
+        cleanLinkedinLink,
+        cleanFacebookLink,
+        cleanPortfolioLink,
+        cleanCodeforcesLink,
+        cleanCodechefLink,
+        cleanLeetcodeLink,
+        cleanHackerrankLink,
       ],
       (err, result) => {
         if (err) {
@@ -108,10 +210,7 @@ const updateMyProfile = (req, res) => {
           });
         }
 
-        return res.status(200).json({
-          success: true,
-          message: 'Profile updated successfully',
-        });
+        return saveUserSkills(user.id, skills, res);
       },
     );
 
@@ -132,23 +231,37 @@ const updateMyProfile = (req, res) => {
       whatsappNumber,
       preferredContactMethod,
       visibleContactMethods,
+      skills,
     } = req.body;
+
+    const cleanGithubLink = githubLink?.trim() || null;
+    const cleanLinkedinLink = linkedinLink?.trim() || null;
+    const cleanFacebookLink = facebookLink?.trim() || null;
+    const cleanPersonalWebsite = personalWebsite?.trim() || null;
+    const cleanContactEmail = contactEmail?.trim() || null;
+    const cleanWhatsappNumber = whatsappNumber?.trim() || null;
+    const cleanCurrentPosition = currentPosition?.trim() || null;
+    const cleanCurrentCompany = currentCompany?.trim() || null;
+    const cleanCurrentLocation = currentLocation?.trim() || null;
+
 
     profileModel.updateAlumniProfile(
       user.id,
       [
         bio,
-        currentPosition,
-        currentCompany,
-        currentLocation,
-        githubLink,
-        linkedinLink,
-        facebookLink,
-        personalWebsite,
-        contactEmail,
-        whatsappNumber,
+        cleanCurrentPosition,
+        cleanCurrentCompany,
+        cleanCurrentLocation,
+        cleanGithubLink,
+        cleanLinkedinLink,
+        cleanFacebookLink,
+        cleanPersonalWebsite,
+        cleanContactEmail,
+        cleanWhatsappNumber,
         preferredContactMethod,
-        JSON.stringify(visibleContactMethods),
+        JSON.stringify(
+          Array.isArray(visibleContactMethods) ? visibleContactMethods : [],
+        ),
       ],
       (err, result) => {
         if (err) {
@@ -165,10 +278,7 @@ const updateMyProfile = (req, res) => {
           });
         }
 
-        return res.status(200).json({
-          success: true,
-          message: 'Profile updated successfully',
-        });
+        return saveUserSkills(user.id, skills, res);
       },
     );
 
@@ -180,9 +290,6 @@ const updateMyProfile = (req, res) => {
     message: 'Profile is not available for this user',
   });
 };
-
-
-
 
 // Update Profile Picture
 const updateProfilePicture = (req, res) => {
@@ -224,4 +331,3 @@ module.exports = {
   updateMyProfile,
   updateProfilePicture,
 };
-

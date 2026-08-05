@@ -2,6 +2,8 @@
 const verificationModel = require('../models/verification.model');
 const userModel = require('../models/user.model');
 const profileModel = require('../models/profile.model');
+const db = require('../config/db');
+
 
 // Apply Verification
 const applyVerification = (req, res) => {

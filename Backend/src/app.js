@@ -10,6 +10,8 @@ const facultyRoutes = require('./routes/faculty.route')
 const departmentRoutes = require('./routes/department.route');
 const verificationRoutes = require('./routes/verification.route');
 const profileRoutes = require('./routes/profile.route');
+const skillRoutes = require('./routes/skill.route');
+const projectRoutes = require('./routes/project.route');
 
 
 
@@ -38,6 +40,8 @@ app.use('/api/faculties', facultyRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/skills', skillRoutes);
+app.use('/api/projects', projectRoutes);
 
 
 module.exports = app;
