@@ -15,13 +15,16 @@ const createPost = (data, callback) => {
 };
 
 // Get All Posts (Feed)
-const getAllPosts = (limit, offset, callback) => {
+const getAllPosts = (userId, limit, offset, callback) => {
   const sql = `
     SELECT
       posts.*,
       users.name,
       users.profileImageUrl,
-      users.role
+      users.role,
+      (SELECT COUNT(*) FROM post_likes WHERE post_likes.postId = posts.id) AS likeCount,
+      (SELECT COUNT(*) FROM comments WHERE comments.postId = posts.id) AS commentCount,
+      (EXISTS(SELECT 1 FROM post_likes WHERE post_likes.postId = posts.id AND post_likes.userId = ?)) AS isLiked
     FROM posts
     INNER JOIN users
       ON posts.userId = users.id
@@ -30,24 +33,27 @@ const getAllPosts = (limit, offset, callback) => {
     OFFSET ?
   `;
 
-  db.query(sql, [limit, offset], callback);
+  db.query(sql, [userId, limit, offset], callback);
 };
 
 // Get Post By Id
-const getPostById = (id, callback) => {
+const getPostById = (id, userId, callback) => {
   const sql = `
     SELECT
       posts.*,
       users.name,
       users.profileImageUrl,
-      users.role
+      users.role,
+      (SELECT COUNT(*) FROM post_likes WHERE post_likes.postId = posts.id) AS likeCount,
+      (SELECT COUNT(*) FROM comments WHERE comments.postId = posts.id) AS commentCount,
+      (EXISTS(SELECT 1 FROM post_likes WHERE post_likes.postId = posts.id AND post_likes.userId = ?)) AS isLiked
     FROM posts
     INNER JOIN users
       ON posts.userId = users.id
     WHERE posts.id = ?
   `;
 
-  db.query(sql, [id], callback);
+  db.query(sql, [userId, id], callback);
 };
 
 // Update Post

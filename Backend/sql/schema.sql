@@ -278,6 +278,7 @@ CREATE TABLE posts (
 
 
 CREATE TABLE post_likes (
+    
     postId INT NOT NULL,
     userId INT NOT NULL,
 
@@ -292,3 +293,85 @@ CREATE TABLE post_likes (
         REFERENCES posts(id)
         ON DELETE CASCADE
 );
+
+
+CREATE TABLE comments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    postId INT NOT NULL,
+
+    userId INT NOT NULL,
+
+    content VARCHAR(500) NOT NULL,
+
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (postId)
+        REFERENCES posts(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+
+
+CREATE TABLE comment_replies (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    commentId INT NOT NULL,
+
+    userId INT NOT NULL,
+
+    content VARCHAR(500) NOT NULL,
+
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (commentId)
+        REFERENCES comments(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+
+
+CREATE TABLE comment_likes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    commentId INT NOT NULL,
+
+    userId INT NOT NULL,
+
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (commentId, userId),
+
+    FOREIGN KEY (commentId)
+        REFERENCES comments(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+
+
+-- Performance Indexes
+CREATE INDEX idx_post_likes_postId
+ON post_likes(postId);
+
+CREATE INDEX idx_comment_likes_commentId
+ON comment_likes(commentId);
+
+CREATE INDEX idx_comment_replies_commentId
+ON comment_replies(commentId);

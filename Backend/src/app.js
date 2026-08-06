@@ -14,7 +14,9 @@ const skillRoutes = require('./routes/skill.route');
 const projectRoutes = require('./routes/project.route');
 const postRoutes = require('./routes/post.route');
 const postLikeRoutes = require('./routes/postLike.route');
-
+const commentRoutes = require('./routes/comment.route');
+const replyRoutes = require('./routes/reply.route');
+const commentLikeRoutes = require('./routes/commentLike.route');
 
 
 
@@ -47,7 +49,9 @@ app.use('/api/skills', skillRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/posts', postLikeRoutes);
-
+app.use('/api', commentRoutes);
+app.use('/api', replyRoutes);
+app.use('/api/comments', commentLikeRoutes);
 
 module.exports = app;
 

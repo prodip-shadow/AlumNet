@@ -39,7 +39,7 @@ const getAllPosts = (req, res) => {
   const limit = pageSize;
   const offset = (page - 1) * pageSize;
 
-  postModel.getAllPosts(limit, offset, (err, posts) => {
+  postModel.getAllPosts(req.user.id, limit, offset, (err, posts) => {
     if (err) {
       return res.status(500).json({
         success: false,
@@ -47,43 +47,18 @@ const getAllPosts = (req, res) => {
       });
     }
 
-    postLikeModel.getLikeCounts((err, likeCounts) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: 'Server Error',
-        });
-      }
+    const response = posts.map((post) => ({
+      ...post,
+      likeCount: Number(post.likeCount),
+      commentCount: Number(post.commentCount),
+      isLiked: Boolean(post.isLiked),
+    }));
 
-      postLikeModel.getUserLikes(req.user.id, (err, userLikes) => {
-        if (err) {
-          return res.status(500).json({
-            success: false,
-            message: 'Server Error',
-          });
-        }
-
-        const likeMap = {};
-
-        likeCounts.forEach((item) => {
-          likeMap[item.postId] = Number(item.totalLikes);
-        });
-
-        const likedPosts = new Set(userLikes.map((item) => item.postId));
-
-        const response = posts.map((post) => ({
-          ...post,
-          likeCount: likeMap[post.id] || 0,
-          isLiked: likedPosts.has(post.id),
-        }));
-
-        return res.status(200).json({
-          success: true,
-          posts: response,
-          page,
-          pageSize,
-        });
-      });
+    return res.status(200).json({
+      success: true,
+      posts: response,
+      page,
+      pageSize,
     });
   });
 };
@@ -92,7 +67,7 @@ const getAllPosts = (req, res) => {
 const getPostById = (req, res) => {
   const { id } = req.params;
 
-  postModel.getPostById(id, (err, result) => {
+  postModel.getPostById(id, req.user.id, (err, result) => {
     if (err) {
       return res.status(500).json({
         success: false,
@@ -107,9 +82,16 @@ const getPostById = (req, res) => {
       });
     }
 
+    const post = {
+      ...result[0],
+      likeCount: Number(result[0].likeCount),
+      commentCount: Number(result[0].commentCount),
+      isLiked: Boolean(result[0].isLiked),
+    };
+
     return res.status(200).json({
       success: true,
-      post: result[0],
+      post,
     });
   });
 };
