@@ -324,6 +324,8 @@ CREATE TABLE comment_replies (
 
     commentId INT NOT NULL,
 
+    parentReplyId INT DEFAULT NULL,
+
     userId INT NOT NULL,
 
     content VARCHAR(500) NOT NULL,
@@ -335,6 +337,10 @@ CREATE TABLE comment_replies (
 
     FOREIGN KEY (commentId)
         REFERENCES comments(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (parentReplyId)
+        REFERENCES comment_replies(id)
         ON DELETE CASCADE,
 
     FOREIGN KEY (userId)
@@ -375,3 +381,28 @@ ON comment_likes(commentId);
 
 CREATE INDEX idx_comment_replies_commentId
 ON comment_replies(commentId);
+
+
+
+
+
+
+CREATE TABLE reply_likes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    replyId INT NOT NULL,
+
+    userId INT NOT NULL,
+
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (replyId, userId),
+
+    FOREIGN KEY (replyId)
+        REFERENCES comment_replies(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);

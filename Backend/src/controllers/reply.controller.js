@@ -7,6 +7,7 @@ const createReply = (req, res) => {
   const userId = req.user.id;
 
   const content = req.body.content?.trim();
+  const parentReplyId = req.body.parentReplyId || null;
 
   if (!content) {
     return res.status(400).json({
@@ -30,19 +31,64 @@ const createReply = (req, res) => {
       });
     }
 
-    replyModel.createReply([commentId, userId, content], (err) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: 'Server Error',
-        });
-      }
+    if (parentReplyId) {
+      replyModel.getReplyById(parentReplyId, (err, parentResult) => {
+        if (err) {
+          return res.status(500).json({
+            success: false,
+            message: 'Server Error',
+          });
+        }
 
-      return res.status(201).json({
-        success: true,
-        message: 'Reply created successfully',
+        if (parentResult.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: 'Parent reply not found',
+          });
+        }
+
+        if (Number(parentResult[0].commentId) !== Number(commentId)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Parent reply does not belong to this comment',
+          });
+        }
+
+        replyModel.createReply(
+          [commentId, parentReplyId, userId, content],
+          (err) => {
+            if (err) {
+              return res.status(500).json({
+                success: false,
+                message: 'Server Error',
+              });
+            }
+
+            return res.status(201).json({
+              success: true,
+              message: 'Reply created successfully',
+            });
+          },
+        );
       });
-    });
+    } else {
+      replyModel.createReply(
+        [commentId, null, userId, content],
+        (err) => {
+          if (err) {
+            return res.status(500).json({
+              success: false,
+              message: 'Server Error',
+            });
+          }
+
+          return res.status(201).json({
+            success: true,
+            message: 'Reply created successfully',
+          });
+        },
+      );
+    }
   });
 };
 
@@ -50,7 +96,7 @@ const createReply = (req, res) => {
 const getRepliesByCommentId = (req, res) => {
   const { commentId } = req.params;
 
-  replyModel.getRepliesByCommentId(commentId, (err, result) => {
+  replyModel.getRepliesByCommentId(commentId, req.user.id, (err, result) => {
     if (err) {
       return res.status(500).json({
         success: false,
@@ -60,8 +106,8 @@ const getRepliesByCommentId = (req, res) => {
 
     const formattedReplies = result.map((reply) => ({
       ...reply,
-      likeCount: 0,
-      isLiked: false,
+      likeCount: Number(reply.likeCount),
+      isLiked: Boolean(reply.isLiked),
     }));
 
     return res.status(200).json({

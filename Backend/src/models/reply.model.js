@@ -5,23 +5,26 @@ const createReply = (data, callback) => {
   const sql = `
     INSERT INTO comment_replies (
       commentId,
+      parentReplyId,
       userId,
       content
     )
-    VALUES (?, ?, ?)
+    VALUES (?, ?, ?, ?)
   `;
 
   db.query(sql, data, callback);
 };
 
 // Get Replies By Comment Id
-const getRepliesByCommentId = (commentId, callback) => {
+const getRepliesByCommentId = (commentId, userId, callback) => {
   const sql = `
     SELECT
       comment_replies.*,
       users.name,
       users.profileImageUrl,
-      users.role
+      users.role,
+      (SELECT COUNT(*) FROM reply_likes WHERE reply_likes.replyId = comment_replies.id) AS likeCount,
+      (EXISTS(SELECT 1 FROM reply_likes WHERE reply_likes.replyId = comment_replies.id AND reply_likes.userId = ?)) AS isLiked
     FROM comment_replies
     INNER JOIN users
       ON comment_replies.userId = users.id
@@ -29,7 +32,7 @@ const getRepliesByCommentId = (commentId, callback) => {
     ORDER BY comment_replies.createdAt ASC
   `;
 
-  db.query(sql, [commentId], callback);
+  db.query(sql, [userId, commentId], callback);
 };
 
 // Get Reply By Id

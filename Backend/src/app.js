@@ -17,6 +17,7 @@ const postLikeRoutes = require('./routes/postLike.route');
 const commentRoutes = require('./routes/comment.route');
 const replyRoutes = require('./routes/reply.route');
 const commentLikeRoutes = require('./routes/commentLike.route');
+const replyLikeRoutes = require('./routes/replyLike.route');
 
 
 
@@ -52,6 +53,6 @@ app.use('/api/posts', postLikeRoutes);
 app.use('/api', commentRoutes);
 app.use('/api', replyRoutes);
 app.use('/api/comments', commentLikeRoutes);
+app.use('/api/replies', replyLikeRoutes);
 
 module.exports = app;
-
