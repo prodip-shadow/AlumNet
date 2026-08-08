@@ -6,7 +6,7 @@ const likePost = (req, res) => {
   const { id: postId } = req.params;
   const userId = req.user.id;
 
-  postModel.getPostById(postId, (err, result) => {
+  postModel.checkPostExists(postId, (err, result) => {
     if (err) {
       return res.status(500).json({
         success: false,
@@ -58,7 +58,7 @@ const unlikePost = (req, res) => {
   const { id: postId } = req.params;
   const userId = req.user.id;
 
-  postModel.getPostById(postId, (err, result) => {
+  postModel.checkPostExists(postId, (err, result) => {
     if (err) {
       return res.status(500).json({
         success: false,

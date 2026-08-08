@@ -36,20 +36,9 @@ const isCommentLiked = (commentId, userId, callback) => {
   db.query(sql, [commentId, userId], callback);
 };
 
-// Get Like Count
-const getCommentLikeCount = (commentId, callback) => {
-  const sql = `
-    SELECT COUNT(*) AS likeCount
-    FROM comment_likes
-    WHERE commentId = ?
-  `;
-
-  db.query(sql, [commentId], callback);
-};
-
 module.exports = {
   likeComment,
   unlikeComment,
   isCommentLiked,
-  getCommentLikeCount,
 };
+

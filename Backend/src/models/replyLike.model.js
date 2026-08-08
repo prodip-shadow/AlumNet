@@ -36,20 +36,9 @@ const isReplyLiked = (replyId, userId, callback) => {
   db.query(sql, [replyId, userId], callback);
 };
 
-// Get Like Count
-const getReplyLikeCount = (replyId, callback) => {
-  const sql = `
-    SELECT COUNT(*) AS likeCount
-    FROM reply_likes
-    WHERE replyId = ?
-  `;
-
-  db.query(sql, [replyId], callback);
-};
-
 module.exports = {
   likeReply,
   unlikeReply,
   isReplyLiked,
-  getReplyLikeCount,
 };
+

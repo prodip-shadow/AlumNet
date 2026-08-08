@@ -15,7 +15,7 @@ const createComment = (req, res) => {
     });
   }
 
-  postModel.getPostById(postId, (err, result) => {
+  postModel.checkPostExists(postId, (err, result) => {
     if (err) {
       return res.status(500).json({
         success: false,

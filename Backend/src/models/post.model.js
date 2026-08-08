@@ -87,10 +87,23 @@ const deletePost = (id, callback) => {
   db.query(sql, [id], callback);
 };
 
+// Check Post Exists
+const checkPostExists = (id, callback) => {
+  const sql = `
+    SELECT id
+    FROM posts
+    WHERE id = ?
+  `;
+
+  db.query(sql, [id], callback);
+};
+
 module.exports = {
   createPost,
   getAllPosts,
   getPostById,
+  checkPostExists,
   updatePost,
   deletePost,
 };
+

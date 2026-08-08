@@ -18,8 +18,9 @@ const commentRoutes = require('./routes/comment.route');
 const replyRoutes = require('./routes/reply.route');
 const commentLikeRoutes = require('./routes/commentLike.route');
 const replyLikeRoutes = require('./routes/replyLike.route');
-
-
+const alumniRoutes = require('./routes/alumni.route');
+const connectionRoutes = require('./routes/connection.route');
+const opportunityRoutes = require('./routes/opportunity.route');
 
 const app = express();
 app.use(helmet());
@@ -54,5 +55,8 @@ app.use('/api', commentRoutes);
 app.use('/api', replyRoutes);
 app.use('/api/comments', commentLikeRoutes);
 app.use('/api/replies', replyLikeRoutes);
+app.use('/api/alumni', alumniRoutes);
+app.use('/api/connections', connectionRoutes);
+app.use('/api/opportunities', opportunityRoutes);
 
 module.exports = app;

@@ -100,7 +100,7 @@ const getPostById = (req, res) => {
 const updatePost = (req, res) => {
   const { id } = req.params;
 
-  postModel.getPostById(id, (err, result) => {
+  postModel.getPostById(id, req.user.id, (err, result) => {
     if (err) {
       return res.status(500).json({
         success: false,
@@ -170,7 +170,7 @@ const updatePost = (req, res) => {
 const deletePost = (req, res) => {
   const { id } = req.params;
 
-  postModel.getPostById(id, (err, result) => {
+  postModel.getPostById(id, req.user.id, (err, result) => {
     if (err) {
       return res.status(500).json({
         success: false,
