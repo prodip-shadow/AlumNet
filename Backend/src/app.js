@@ -21,6 +21,8 @@ const replyLikeRoutes = require('./routes/replyLike.route');
 const alumniRoutes = require('./routes/alumni.route');
 const connectionRoutes = require('./routes/connection.route');
 const opportunityRoutes = require('./routes/opportunity.route');
+const eventRoutes = require('./routes/event.route');
+const paymentRoutes = require('./routes/payment.route');
 
 const app = express();
 app.use(helmet());
@@ -31,6 +33,9 @@ app.use(
     credentials: true,
   }),
 );
+
+// Mount payment routes BEFORE general json parser for raw webhook body support
+app.use('/api/payments', paymentRoutes);
 
 app.use(express.json());
 app.use(cookieParser());
@@ -58,5 +63,6 @@ app.use('/api/replies', replyLikeRoutes);
 app.use('/api/alumni', alumniRoutes);
 app.use('/api/connections', connectionRoutes);
 app.use('/api/opportunities', opportunityRoutes);
+app.use('/api/events', eventRoutes);
 
 module.exports = app;

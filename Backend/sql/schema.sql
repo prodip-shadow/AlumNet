@@ -527,3 +527,119 @@ ON opportunity_applications(studentId);
 
 CREATE INDEX idx_opp_apps_status
 ON opportunity_applications(status);
+
+
+
+
+CREATE TABLE event_creator_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    userId INT NOT NULL,
+
+    grantedBy INT NOT NULL,
+
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (userId),
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (grantedBy)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    creatorUserId INT NOT NULL,
+
+    title VARCHAR(255) NOT NULL,
+
+    description TEXT NOT NULL,
+
+    location VARCHAR(255) NOT NULL,
+
+    eventDate DATETIME NOT NULL,
+
+    registrationDeadline DATETIME NOT NULL,
+
+    registrationFee DECIMAL(10, 2) DEFAULT 0.00,
+
+    isFree BOOLEAN DEFAULT TRUE,
+
+    maxParticipants INT DEFAULT NULL,
+
+    contactInfo VARCHAR(255) NOT NULL,
+
+    bannerImageUrl VARCHAR(500) DEFAULT NULL,
+
+    isRegistrationOpen BOOLEAN DEFAULT TRUE,
+
+    status ENUM('ACTIVE', 'CLOSED', 'CANCELLED') DEFAULT 'ACTIVE',
+
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    updatedAt DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (creatorUserId)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE event_registrations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    eventId INT NOT NULL,
+
+    userId INT NOT NULL,
+
+    stripeSessionId VARCHAR(255) DEFAULT NULL,
+
+    paymentIntentId VARCHAR(255) DEFAULT NULL,
+
+    amount DECIMAL(10, 2) DEFAULT 0.00,
+
+    paymentStatus ENUM('FREE', 'PENDING', 'PAID', 'FAILED') DEFAULT 'PENDING',
+
+    registrationStatus ENUM('REGISTERED', 'ATTENDED', 'CANCELLED', 'FAILED') DEFAULT 'REGISTERED',
+
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (eventId, userId),
+
+    FOREIGN KEY (eventId)
+        REFERENCES events(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+
+CREATE INDEX idx_ecp_userId
+ON event_creator_permissions(userId);
+
+CREATE INDEX idx_events_status
+ON events(status);
+
+CREATE INDEX idx_events_eventDate
+ON events(eventDate DESC);
+
+CREATE INDEX idx_events_creatorUserId
+ON events(creatorUserId);
+
+CREATE INDEX idx_er_eventId
+ON event_registrations(eventId);
+
+CREATE INDEX idx_er_userId
+ON event_registrations(userId);
+
+CREATE INDEX idx_er_stripeSessionId
+ON event_registrations(stripeSessionId);
+
+CREATE INDEX idx_er_paymentStatus
+ON event_registrations(paymentStatus);
