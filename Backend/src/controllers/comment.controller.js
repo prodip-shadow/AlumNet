@@ -1,5 +1,6 @@
 const commentModel = require('../models/comment.model');
 const postModel = require('../models/post.model');
+const notificationService = require('../services/notification.service');
 
 // Create Comment
 const createComment = (req, res) => {
@@ -37,6 +38,23 @@ const createComment = (req, res) => {
           message: 'Server Error',
         });
       }
+
+      // Trigger POST_COMMENT Notification
+      postModel.getPostById(postId, userId, (postErr, postRes) => {
+        if (!postErr && postRes && postRes.length > 0) {
+          notificationService.createNotification(
+            {
+              userId: postRes[0].userId,
+              actorUserId: userId,
+              type: 'POST_COMMENT',
+              entityType: 'POST',
+              referenceId: Number(postId),
+              message: '{actor} commented on your post.',
+            },
+            req.app.get('io')
+          );
+        }
+      });
 
       return res.status(201).json({
         success: true,

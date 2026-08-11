@@ -643,3 +643,35 @@ ON event_registrations(stripeSessionId);
 
 CREATE INDEX idx_er_paymentStatus
 ON event_registrations(paymentStatus);
+
+
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    userId INT NOT NULL,
+
+    actorUserId INT DEFAULT NULL,
+
+    type VARCHAR(50) NOT NULL,
+
+    entityType VARCHAR(50) DEFAULT NULL,
+
+    referenceId INT DEFAULT NULL,
+
+    message VARCHAR(300) NOT NULL,
+
+    isRead BOOLEAN DEFAULT FALSE,
+
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (actorUserId)
+        REFERENCES users(id)
+        ON DELETE SET NULL
+);
+
+CREATE INDEX idx_notifications_user_read_created
+ON notifications(userId, isRead, createdAt DESC);

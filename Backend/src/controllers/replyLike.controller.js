@@ -1,5 +1,6 @@
 const replyLikeModel = require('../models/replyLike.model');
 const replyModel = require('../models/reply.model');
+const notificationService = require('../services/notification.service');
 
 // Like Reply
 const likeReply = (req, res) => {
@@ -20,6 +21,8 @@ const likeReply = (req, res) => {
         message: 'Reply not found',
       });
     }
+
+    const reply = result[0];
 
     replyLikeModel.isReplyLiked(replyId, userId, (err, result) => {
       if (err) {
@@ -43,6 +46,19 @@ const likeReply = (req, res) => {
             message: 'Server Error',
           });
         }
+
+        // Trigger REPLY_LIKE Notification
+        notificationService.createNotification(
+          {
+            userId: reply.userId,
+            actorUserId: userId,
+            type: 'REPLY_LIKE',
+            entityType: 'COMMENT',
+            referenceId: Number(replyId),
+            message: '{actor} liked your reply.',
+          },
+          req.app.get('io')
+        );
 
         return res.status(201).json({
           success: true,

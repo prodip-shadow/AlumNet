@@ -23,6 +23,7 @@ const connectionRoutes = require('./routes/connection.route');
 const opportunityRoutes = require('./routes/opportunity.route');
 const eventRoutes = require('./routes/event.route');
 const paymentRoutes = require('./routes/payment.route');
+const notificationRoutes = require('./routes/notification.route');
 
 const app = express();
 app.use(helmet());
@@ -34,11 +35,15 @@ app.use(
   }),
 );
 
+
+
+app.use(cookieParser());
+
 // Mount payment routes BEFORE general json parser for raw webhook body support
 app.use('/api/payments', paymentRoutes);
 
+
 app.use(express.json());
-app.use(cookieParser());
 
 app.get('/', (req, res) => {
   res.send('AlumNet API Running...');
@@ -48,6 +53,8 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+
+
 app.use('/api/faculties', facultyRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/verification', verificationRoutes);
@@ -64,5 +71,7 @@ app.use('/api/alumni', alumniRoutes);
 app.use('/api/connections', connectionRoutes);
 app.use('/api/opportunities', opportunityRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 module.exports = app;
+

@@ -1,6 +1,8 @@
 const Stripe = require('stripe');
 const eventModel = require('../models/event.model');
 const userModel = require('../models/user.model');
+const db = require('../config/db');
+const notificationService = require('../services/notification.service');
 
 // Helper to get Stripe client
 const getStripe = () => {
@@ -173,13 +175,35 @@ const createEvent = (req, res) => {
       bannerImageUrl,
     ];
 
-    eventModel.createEvent(data, (err) => {
+    eventModel.createEvent(data, (err, createResult) => {
       if (err) {
         return res.status(500).json({
           success: false,
           message: 'Server Error',
         });
       }
+
+      const eventId = createResult?.insertId ? Number(createResult.insertId) : null;
+
+      // Trigger NEW_EVENT Notification to active STUDENT and ALUMNI users
+      db.query(
+        "SELECT id FROM users WHERE isActive = TRUE AND role IN ('STUDENT', 'ALUMNI') AND id != ?",
+        [userId],
+        (userErr, userRows) => {
+          if (!userErr && userRows && userRows.length > 0) {
+            const targetUserIds = userRows.map((r) => r.id);
+            notificationService.createBulkNotifications(
+              targetUserIds,
+              userId,
+              'NEW_EVENT',
+              'EVENT',
+              eventId,
+              `New event: ${title.trim()}`,
+              req.app.get('io')
+            );
+          }
+        }
+      );
 
       return res.status(201).json({
         success: true,
@@ -490,6 +514,29 @@ const updateEventStatus = (req, res) => {
         });
       }
 
+      if (status === 'CANCELLED') {
+        // Fetch registered users to send EVENT_CANCELLED notification
+        eventModel.getEventRegistrations(id, (regErr, registrations) => {
+          if (!regErr && registrations && registrations.length > 0) {
+            const registeredUserIds = registrations
+              .filter((r) => r.registrationStatus === 'REGISTERED' || r.paymentStatus === 'PAID' || r.paymentStatus === 'FREE')
+              .map((r) => r.userId);
+
+            if (registeredUserIds.length > 0) {
+              notificationService.createBulkNotifications(
+                registeredUserIds,
+                userId,
+                'EVENT_CANCELLED',
+                'EVENT',
+                Number(id),
+                `${event.title} has been cancelled.`,
+                req.app.get('io')
+              );
+            }
+          }
+        });
+      }
+
       return res.status(200).json({
         success: true,
         message: 'Event status updated successfully',
@@ -629,6 +676,19 @@ const registerForEvent = (req, res) => {
             });
           }
 
+          // Trigger EVENT_REGISTRATION Notification
+          notificationService.createNotification(
+            {
+              userId: Number(userId),
+              actorUserId: null,
+              type: 'EVENT_REGISTRATION',
+              entityType: 'EVENT',
+              referenceId: Number(id),
+              message: `You successfully registered for ${event.title}.`,
+            },
+            req.app.get('io')
+          );
+
           return res.status(201).json({
             success: true,
             message: 'Registered successfully for free event',
@@ -643,8 +703,8 @@ const registerForEvent = (req, res) => {
       const stripe = getStripe();
       const feeInCents = Math.round(Number(event.registrationFee) * 100);
 
-      stripe.checkout.sessions.create(
-        {
+      stripe.checkout.sessions
+        .create({
           payment_method_types: ['card'],
           line_items: [
             {
@@ -666,15 +726,8 @@ const registerForEvent = (req, res) => {
             eventId: String(id),
             userId: String(userId),
           },
-        },
-        (err, session) => {
-          if (err) {
-            return res.status(500).json({
-              success: false,
-              message: 'Stripe checkout session creation failed',
-            });
-          }
-
+        })
+        .then((session) => {
           eventModel.upsertPendingRegistration(
             id,
             userId,
@@ -696,8 +749,14 @@ const registerForEvent = (req, res) => {
               });
             },
           );
-        },
-      );
+        })
+        .catch((err) => {
+          console.error('Stripe checkout session creation error:', err.message);
+          return res.status(500).json({
+            success: false,
+            message: 'Stripe checkout session creation failed',
+          });
+        });
     });
   });
 };

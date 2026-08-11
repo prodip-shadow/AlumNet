@@ -1,5 +1,6 @@
 const connectionModel = require('../models/connection.model');
 const userModel = require('../models/user.model');
+const notificationService = require('../services/notification.service');
 
 // Send Connection Request
 const sendConnectionRequest = (req, res) => {
@@ -83,13 +84,28 @@ const sendConnectionRequest = (req, res) => {
       }
 
       // Send Request
-      connectionModel.sendRequest(requesterId, targetUserId, (err) => {
+      connectionModel.sendRequest(requesterId, targetUserId, (err, result) => {
         if (err) {
           return res.status(500).json({
             success: false,
             message: 'Server Error',
           });
         }
+
+        const connectionId = result?.insertId ? Number(result.insertId) : null;
+
+        // Trigger CONNECTION_REQUEST Notification
+        notificationService.createNotification(
+          {
+            userId: Number(targetUserId),
+            actorUserId: Number(requesterId),
+            type: 'CONNECTION_REQUEST',
+            entityType: 'CONNECTION',
+            referenceId: connectionId,
+            message: '{actor} sent you a connection request.',
+          },
+          req.app.get('io')
+        );
 
         return res.status(201).json({
           success: true,
@@ -199,6 +215,19 @@ const acceptConnection = (req, res) => {
           message: 'Server Error',
         });
       }
+
+      // Trigger CONNECTION_ACCEPTED Notification
+      notificationService.createNotification(
+        {
+          userId: Number(connection.requesterId),
+          actorUserId: Number(req.user.id),
+          type: 'CONNECTION_ACCEPTED',
+          entityType: 'CONNECTION',
+          referenceId: Number(id),
+          message: '{actor} accepted your connection request.',
+        },
+        req.app.get('io')
+      );
 
       return res.status(200).json({
         success: true,

@@ -1,5 +1,6 @@
 const replyModel = require('../models/reply.model');
 const commentModel = require('../models/comment.model');
+const notificationService = require('../services/notification.service');
 
 // Create Reply
 const createReply = (req, res) => {
@@ -31,6 +32,8 @@ const createReply = (req, res) => {
       });
     }
 
+    const comment = result[0];
+
     if (parentReplyId) {
       replyModel.getReplyById(parentReplyId, (err, parentResult) => {
         if (err) {
@@ -54,6 +57,8 @@ const createReply = (req, res) => {
           });
         }
 
+        const recipientUserId = parentResult[0].userId;
+
         replyModel.createReply(
           [commentId, parentReplyId, userId, content],
           (err) => {
@@ -64,6 +69,19 @@ const createReply = (req, res) => {
               });
             }
 
+            // Trigger COMMENT_REPLY Notification
+            notificationService.createNotification(
+              {
+                userId: recipientUserId,
+                actorUserId: userId,
+                type: 'COMMENT_REPLY',
+                entityType: 'COMMENT',
+                referenceId: Number(commentId),
+                message: '{actor} replied to your comment.',
+              },
+              req.app.get('io')
+            );
+
             return res.status(201).json({
               success: true,
               message: 'Reply created successfully',
@@ -72,6 +90,8 @@ const createReply = (req, res) => {
         );
       });
     } else {
+      const recipientUserId = comment.userId;
+
       replyModel.createReply(
         [commentId, null, userId, content],
         (err) => {
@@ -81,6 +101,19 @@ const createReply = (req, res) => {
               message: 'Server Error',
             });
           }
+
+          // Trigger COMMENT_REPLY Notification
+          notificationService.createNotification(
+            {
+              userId: recipientUserId,
+              actorUserId: userId,
+              type: 'COMMENT_REPLY',
+              entityType: 'COMMENT',
+              referenceId: Number(commentId),
+              message: '{actor} replied to your comment.',
+            },
+            req.app.get('io')
+          );
 
           return res.status(201).json({
             success: true,

@@ -1,5 +1,6 @@
 const commentLikeModel = require('../models/commentLike.model');
 const commentModel = require('../models/comment.model');
+const notificationService = require('../services/notification.service');
 
 // Like Comment
 const likeComment = (req, res) => {
@@ -20,6 +21,8 @@ const likeComment = (req, res) => {
         message: 'Comment not found',
       });
     }
+
+    const comment = result[0];
 
     commentLikeModel.isCommentLiked(commentId, userId, (err, result) => {
       if (err) {
@@ -43,6 +46,19 @@ const likeComment = (req, res) => {
             message: 'Server Error',
           });
         }
+
+        // Trigger COMMENT_LIKE Notification
+        notificationService.createNotification(
+          {
+            userId: comment.userId,
+            actorUserId: userId,
+            type: 'COMMENT_LIKE',
+            entityType: 'COMMENT',
+            referenceId: Number(commentId),
+            message: '{actor} liked your comment.',
+          },
+          req.app.get('io')
+        );
 
         return res.status(201).json({
           success: true,

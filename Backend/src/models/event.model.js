@@ -244,8 +244,7 @@ const updateRegistrationPaymentStatus = (stripeSessionId, paymentIntentId, payme
     UPDATE event_registrations
     SET
       paymentStatus = ?,
-      registrationStatus = ?,
-      updatedAt = NOW()
+      registrationStatus = ?
   `;
 
   const params = [paymentStatus, registrationStatus];

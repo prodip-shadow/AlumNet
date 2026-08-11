@@ -1,5 +1,6 @@
 const postModel = require('../models/post.model');
 const postLikeModel = require('../models/postLike.model');
+const notificationService = require('../services/notification.service');
 
 // Like Post
 const likePost = (req, res) => {
@@ -43,6 +44,23 @@ const likePost = (req, res) => {
             message: 'Server Error',
           });
         }
+
+        // Trigger POST_LIKE Notification
+        postModel.getPostById(postId, userId, (postErr, postRes) => {
+          if (!postErr && postRes && postRes.length > 0) {
+            notificationService.createNotification(
+              {
+                userId: postRes[0].userId,
+                actorUserId: userId,
+                type: 'POST_LIKE',
+                entityType: 'POST',
+                referenceId: Number(postId),
+                message: '{actor} liked your post.',
+              },
+              req.app.get('io')
+            );
+          }
+        });
 
         return res.status(200).json({
           success: true,

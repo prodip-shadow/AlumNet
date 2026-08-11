@@ -1,4 +1,5 @@
 const opportunityModel = require('../models/opportunity.model');
+const notificationService = require('../services/notification.service');
 
 const ALLOWED_TYPES = [
   'JOB',
@@ -597,6 +598,23 @@ const updateApplicationStatus = (req, res) => {
               message: 'Server Error',
             });
           }
+
+          // Trigger APPLICATION_STATUS_CHANGED Notification
+          const notificationMessage = messageText
+            ? `Your application status has been updated to ${status}: ${messageText}`
+            : `Your application status has been updated to ${status}.`;
+
+          notificationService.createNotification(
+            {
+              userId: application.studentId,
+              actorUserId: userId,
+              type: 'APPLICATION_STATUS_CHANGED',
+              entityType: 'APPLICATION',
+              referenceId: Number(applicationId),
+              message: notificationMessage,
+            },
+            req.app.get('io')
+          );
 
           return res.status(200).json({
             success: true,
