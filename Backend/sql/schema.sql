@@ -675,3 +675,57 @@ CREATE TABLE notifications (
 
 CREATE INDEX idx_notifications_user_read_created
 ON notifications(userId, isRead, createdAt DESC);
+
+
+CREATE TABLE alumni_migration_applications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    userId INT NOT NULL,
+
+    graduationYear INT NOT NULL,
+
+    currentPosition VARCHAR(150) DEFAULT NULL,
+
+    currentCompany VARCHAR(150) DEFAULT NULL,
+
+    currentLocation VARCHAR(150) DEFAULT NULL,
+
+    githubLink VARCHAR(200) DEFAULT NULL,
+
+    linkedinLink VARCHAR(200) DEFAULT NULL,
+
+    facebookLink VARCHAR(200) DEFAULT NULL,
+
+    personalWebsite VARCHAR(200) DEFAULT NULL,
+
+    contactEmail VARCHAR(150) DEFAULT NULL,
+
+    whatsappNumber VARCHAR(30) DEFAULT NULL,
+
+    preferredContactMethod VARCHAR(30) DEFAULT NULL,
+
+    visibleContactMethods VARCHAR(200) DEFAULT NULL,
+
+    status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+
+    rejectionReason VARCHAR(300) DEFAULT NULL,
+
+    reviewedByUserId INT DEFAULT NULL,
+
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updatedAt DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+
+    reviewedAt DATETIME DEFAULT NULL,
+
+    FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (reviewedByUserId)
+        REFERENCES users(id)
+        ON DELETE SET NULL
+);
+
+CREATE INDEX idx_ama_userId ON alumni_migration_applications(userId);
+CREATE INDEX idx_ama_status ON alumni_migration_applications(status);
