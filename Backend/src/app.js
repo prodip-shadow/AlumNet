@@ -24,6 +24,7 @@ const opportunityRoutes = require('./routes/opportunity.route');
 const eventRoutes = require('./routes/event.route');
 const paymentRoutes = require('./routes/payment.route');
 const notificationRoutes = require('./routes/notification.route');
+const aiAssistantRoutes = require('./routes/aiAssistant.route');
 
 const app = express();
 app.use(helmet());
@@ -72,6 +73,7 @@ app.use('/api/connections', connectionRoutes);
 app.use('/api/opportunities', opportunityRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/ai-assistant', aiAssistantRoutes);
 
 module.exports = app;
 

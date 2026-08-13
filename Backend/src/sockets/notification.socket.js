@@ -76,7 +76,6 @@ const emitToUser = (io, userId, event, payload) => {
 // Initialize Notification Socket Handler
 const initNotificationSocket = (io) => {
   io.on('connection', (socket) => {
-    // 1. Handshake authentication check
     const authenticatedUserId = getUserIdFromSocket(socket);
 
     if (authenticatedUserId) {
@@ -84,7 +83,6 @@ const initNotificationSocket = (io) => {
       addUserSocket(authenticatedUserId, socket.id);
     }
 
-    // 2. Handle explicit 'register' event with JWT token verification or fallback
     socket.on('register', (data) => {
       let targetUserId = null;
 
@@ -94,10 +92,8 @@ const initNotificationSocket = (io) => {
           const decoded = jwt.verify(tokenToVerify, process.env.JWT_SECRET);
           targetUserId = Number(decoded.id);
         } catch (err) {
-          // Token verification failed
         }
       } else if (data && data.userId) {
-        // If data passes userId, check if already authenticated or token passed
         if (socket.userId && Number(socket.userId) === Number(data.userId)) {
           targetUserId = Number(socket.userId);
         }
@@ -109,7 +105,6 @@ const initNotificationSocket = (io) => {
       }
     });
 
-    // 3. Handle disconnect cleanup
     socket.on('disconnect', () => {
       if (socket.userId) {
         removeUserSocket(socket.userId, socket.id);

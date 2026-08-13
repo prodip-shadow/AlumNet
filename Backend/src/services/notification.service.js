@@ -2,11 +2,6 @@ const notificationModel = require('../models/notification.model');
 const userModel = require('../models/user.model');
 const { emitToUser } = require('../sockets/notification.socket');
 
-/**
- * Central Notification Service
- * Enforces self-notification rules, saves to MySQL, and emits real-time notifications via Socket.io.
- * Handled gracefully so notification failures never crash primary business actions.
- */
 
 const processMessage = (rawMessage, actorId, cb) => {
   if (actorId && rawMessage.includes('{actor}')) {
@@ -88,16 +83,13 @@ const createNotification = (notificationData, io, callback) => {
 };
 
 
-/**
- * Bulk create notifications (e.g. for NEW_EVENT)
- */
+
 const createBulkNotifications = (targetUserIds, actorUserId, type, entityType, referenceId, message, io, callback) => {
   if (!targetUserIds || targetUserIds.length === 0) {
     if (typeof callback === 'function') return callback(null, { affectedRows: 0 });
     return;
   }
 
-  // Filter out actor if in list
   const validUserIds = targetUserIds.filter(
     (id) => actorUserId === null || actorUserId === undefined || Number(id) !== Number(actorUserId)
   );
