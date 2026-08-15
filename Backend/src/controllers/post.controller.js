@@ -36,10 +36,10 @@ const getAllPosts = (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const pageSize = Math.max(1, parseInt(req.query.pageSize) || 10);
 
-  const limit = pageSize;
+  const fetchLimit = pageSize + 1;
   const offset = (page - 1) * pageSize;
 
-  postModel.getAllPosts(req.user.id, limit, offset, (err, posts) => {
+  postModel.getAllPosts(req.user.id, fetchLimit, offset, (err, posts) => {
     if (err) {
       return res.status(500).json({
         success: false,
@@ -47,7 +47,10 @@ const getAllPosts = (req, res) => {
       });
     }
 
-    const response = posts.map((post) => ({
+    const hasMore = posts.length > pageSize;
+    const pagedPosts = hasMore ? posts.slice(0, pageSize) : posts;
+
+    const response = pagedPosts.map((post) => ({
       ...post,
       likeCount: Number(post.likeCount),
       commentCount: Number(post.commentCount),
@@ -59,6 +62,7 @@ const getAllPosts = (req, res) => {
       posts: response,
       page,
       pageSize,
+      hasMore,
     });
   });
 };

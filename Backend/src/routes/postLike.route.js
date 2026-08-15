@@ -9,14 +9,14 @@ const { allowRoles } = require('../middlewares/role.middleware');
 router.post(
   '/:id/like',
   verifyToken,
-  allowRoles('STUDENT', 'ALUMNI'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   postLikeController.likePost,
 );
 
 router.delete(
   '/:id/like',
   verifyToken,
-  allowRoles('STUDENT', 'ALUMNI'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   postLikeController.unlikePost,
 );
 

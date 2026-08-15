@@ -10,7 +10,7 @@ const { allowRoles } = require('../middlewares/role.middleware');
 router.post(
   '/posts/:postId/comments',
   verifyToken,
-  allowRoles('STUDENT', 'ALUMNI'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   commentController.createComment,
 );
 
@@ -25,7 +25,7 @@ router.get(
 router.put(
   '/comments/:id',
   verifyToken,
-  allowRoles('STUDENT', 'ALUMNI'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   commentController.updateComment,
 );
 

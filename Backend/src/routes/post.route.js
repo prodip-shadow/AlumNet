@@ -11,12 +11,12 @@ const { uploadSingleImage } = require('../middlewares/upload.middleware');
 router.post(
   '/',
   verifyToken,
-  allowRoles('STUDENT', 'ALUMNI'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   ...uploadSingleImage('postImage'),
   postController.createPost,
 );
 
-// Feed
+// Feed (Accessible by all logged in users)
 router.get('/', verifyToken, postController.getAllPosts);
 
 // Single Post
@@ -26,7 +26,7 @@ router.get('/:id', verifyToken, postController.getPostById);
 router.put(
   '/:id',
   verifyToken,
-  allowRoles('STUDENT', 'ALUMNI'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   ...uploadSingleImage('postImage'),
   postController.updatePost,
 );
@@ -35,7 +35,7 @@ router.put(
 router.delete(
   '/:id',
   verifyToken,
-  allowRoles('STUDENT', 'ALUMNI'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   postController.deletePost,
 );
 
