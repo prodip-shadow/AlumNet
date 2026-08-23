@@ -34,17 +34,42 @@ User: "React niye project koreche emon alumni chai"
 Output:
 {"location":null,"skill":null,"session":null,"project":"React"}`;
 
+const extractSearchFiltersWithOpenRouter = async (prompt, apiKey) => {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': 'http://localhost:5000',
+      'X-Title': 'AlumNet',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      max_tokens: 300,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: SYSTEM_INSTRUCTION },
+        { role: 'user', content: prompt },
+      ],
+    }),
+  });
 
-const extractSearchFilters = async (prompt) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured in environment variables');
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(
+      `OpenRouter API call failed (${response.status}): ${errData.error?.message || response.statusText}`
+    );
   }
 
+  const data = await response.json();
+  const rawText = data.choices?.[0]?.message?.content;
+  return rawText;
+};
+
+const extractSearchFiltersWithGemini = async (prompt, apiKey) => {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-flash-latest',
+    model: 'gemini-1.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
     },
@@ -52,13 +77,39 @@ const extractSearchFilters = async (prompt) => {
   });
 
   const result = await model.generateContent(prompt);
-  const rawText = result.response.text();
+  return result.response.text();
+};
 
-  if (!rawText) {
-    throw new Error('Empty response received from Gemini API');
+const extractSearchFilters = async (prompt) => {
+  const openRouterKey = process.env.OPENROUTER_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
+
+  let rawText;
+
+  if (openRouterKey) {
+    try {
+      rawText = await extractSearchFiltersWithOpenRouter(prompt, openRouterKey);
+    } catch (err) {
+      console.error('OpenRouter request failed:', err.message);
+      if (geminiKey) {
+        console.log('Falling back to Google Gemini SDK...');
+        rawText = await extractSearchFiltersWithGemini(prompt, geminiKey);
+      } else {
+        throw err;
+      }
+    }
+  } else if (geminiKey) {
+    rawText = await extractSearchFiltersWithGemini(prompt, geminiKey);
+  } else {
+    throw new Error(
+      'Neither OPENROUTER_API_KEY nor GEMINI_API_KEY is configured in environment variables'
+    );
   }
 
-  // Clean markdown delimiters if present
+  if (!rawText) {
+    throw new Error('Empty response received from AI API');
+  }
+
   let cleanedText = rawText.trim();
   if (cleanedText.startsWith('```')) {
     cleanedText = cleanedText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
@@ -75,7 +126,6 @@ const extractSearchFilters = async (prompt) => {
     throw new Error('AI output is not a valid JSON object');
   }
 
-  // Sanitize filters to ensure only the allowed 4 keys exist with string or null values
   const sanitizeValue = (val) => {
     if (typeof val === 'string' && val.trim().length > 0) {
       return val.trim();

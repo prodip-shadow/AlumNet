@@ -446,9 +446,7 @@ const PostCard = ({ post, onToggleLike, onRefreshPosts }) => {
                 <h3 className="font-semibold text-sm text-foreground leading-none group-hover/author:text-primary group-hover/author:underline transition-colors">
                   {post.author?.name || 'User'}
                 </h3>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                  {post.author?.role || 'Alumni'}
-                </Badge>
+             
               </div>
               <span className="text-xs text-muted-foreground">{post.timeAgo}</span>
             </div>

@@ -9,13 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import {
   LayoutDashboard,
   Users,
-  Briefcase,
-  Calendar,
-  Bookmark,
   Settings,
   ShieldCheck,
   ChevronRight,
-  TrendingUp,
 } from 'lucide-react';
 
 const navItems = [
@@ -45,13 +41,12 @@ const Sidebar = () => {
     : 'Alumni';
 
   return (
-    <aside className="w-full lg:w-72 xl:w-80 shrink-0 sticky top-[5.5rem] self-start max-h-[calc(100vh-6.5rem)] overflow-y-auto space-y-3 pr-2 scrollbar-none">
-      {/* User Profile Item (Flat Facebook Style Row) */}
+    <aside className="w-full lg:w-72 xl:w-80 shrink-0 sticky top-22 self-start max-h-[calc(100vh-6.5rem)] overflow-y-auto space-y-3 pr-2 scrollbar-none">
       <Link
         href="/profile"
-        className="flex items-center gap-3.5 p-2.5 rounded-xl hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 transition-all duration-150 group w-full"
+        className="flex items-center gap-3.5 p-2.5 rounded-xl  transition-all duration-150 group w-full"
       >
-        <Avatar className="h-10 w-10 border border-emerald-500/30 group-hover:scale-105 transition-transform shrink-0">
+        <Avatar className="h-10 w-10 border border-emerald-500/30  transition-transform shrink-0">
           {user?.profileImageUrl ? (
             <AvatarImage
               src={user.profileImageUrl}
@@ -62,14 +57,14 @@ const Sidebar = () => {
             {user?.name
               ? user.name.slice(0, 2).toUpperCase()
               : loading
-              ? '...'
-              : 'US'}
+                ? '...'
+                : 'US'}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <h2 className="font-semibold text-sm text-foreground truncate group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+            <h2 className="font-semibold text-sm text-foreground truncate  transition-colors">
               {loading ? (
                 <span className="inline-block w-24 h-4 bg-muted animate-pulse rounded" />
               ) : (
@@ -83,7 +78,7 @@ const Sidebar = () => {
 
           <div className="mt-0.5">
             <Badge
-              variant="secondary"
+              variant="secondary_1"
               className="px-2 py-0 text-[10px] font-medium bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-none"
             >
               {userRoleDisplay}
@@ -130,10 +125,7 @@ const Sidebar = () => {
         })}
       </nav>
 
-
       <div className="h-px bg-border/60 mx-2" />
-
-   
 
       {/* Footer Links */}
       <div className="pt-3 px-3 text-[10px] text-muted-foreground flex flex-wrap gap-x-2 gap-y-1 w-full">

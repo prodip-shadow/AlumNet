@@ -14,7 +14,7 @@ export default function RootLayout({ children }) {
       lang="en"
       className={cn("h-full", "antialiased", ibmPlexSans.variable, pressStart.variable)}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full  mx-auto max-w-[1750px] flex flex-col">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

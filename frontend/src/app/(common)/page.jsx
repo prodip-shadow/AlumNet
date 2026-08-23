@@ -19,8 +19,10 @@ function formatTimeAgo(dateInput) {
 
   if (diffInSeconds < 60) return 'Just now';
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} mins ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  if (diffInSeconds < 86400)
+    return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 604800)
+    return `${Math.floor(diffInSeconds / 86400)} days ago`;
   return date.toLocaleDateString();
 }
 
@@ -49,7 +51,6 @@ function formatPost(p) {
 const PAGE_SIZE = 10;
 
 const Home = () => {
-  const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -68,7 +69,9 @@ const Home = () => {
         const formatted = response.data.posts.map(formatPost);
         setPosts(formatted);
         setPage(1);
-        setHasMore(response.data.hasMore ?? (response.data.posts.length === PAGE_SIZE));
+        setHasMore(
+          response.data.hasMore ?? response.data.posts.length === PAGE_SIZE,
+        );
       } else {
         setPosts([]);
         setHasMore(false);
@@ -76,7 +79,7 @@ const Home = () => {
     } catch (err) {
       console.error('Error loading posts from database:', err);
       setError(
-        err.response?.data?.message || 'Could not load posts from database'
+        err.response?.data?.message || 'Could not load posts from database',
       );
       setPosts([]);
     } finally {
@@ -91,18 +94,24 @@ const Home = () => {
     const nextPage = page + 1;
 
     try {
-      const response = await api.get(`/api/posts?page=${nextPage}&pageSize=${PAGE_SIZE}`);
+      const response = await api.get(
+        `/api/posts?page=${nextPage}&pageSize=${PAGE_SIZE}`,
+      );
       if (response.data?.success && Array.isArray(response.data.posts)) {
         const newPostsFormatted = response.data.posts.map(formatPost);
 
         setPosts((prevPosts) => {
           const existingIds = new Set(prevPosts.map((p) => p.id));
-          const uniqueNewPosts = newPostsFormatted.filter((p) => !existingIds.has(p.id));
+          const uniqueNewPosts = newPostsFormatted.filter(
+            (p) => !existingIds.has(p.id),
+          );
           return [...prevPosts, ...uniqueNewPosts];
         });
 
         setPage(nextPage);
-        setHasMore(response.data.hasMore ?? (response.data.posts.length === PAGE_SIZE));
+        setHasMore(
+          response.data.hasMore ?? response.data.posts.length === PAGE_SIZE,
+        );
       } else {
         setHasMore(false);
       }
@@ -129,7 +138,7 @@ const Home = () => {
           fetchMorePosts();
         }
       },
-      { threshold: 0.1, rootMargin: '300px' }
+      { threshold: 0.1, rootMargin: '300px' },
     );
 
     observer.observe(target);
@@ -162,7 +171,7 @@ const Home = () => {
           };
         }
         return post;
-      })
+      }),
     );
 
     // Call Backend API
@@ -185,13 +194,13 @@ const Home = () => {
             };
           }
           return post;
-        })
+        }),
       );
     }
   };
 
   return (
-    <div className="mx-auto max-w-[1750px] px-4 md:px-6 py-6">
+    <div className=" px-4 md:px-6 py-6">
       <div className="flex flex-col lg:flex-row gap-8 items-start relative w-full">
         {/* Fully Frozen Sticky Left Sidebar */}
         <Sidebar />
@@ -242,7 +251,6 @@ const Home = () => {
                 />
               ))}
 
-              {/* Sentinel Target for IntersectionObserver & Bottom Loading / End Status */}
               <div ref={observerTargetRef} className="py-4 text-center">
                 {loadingMore && (
                   <div className="flex items-center justify-center space-x-2 py-3 bg-card border border-border/60 rounded-xl shadow-2xs">
@@ -255,7 +263,7 @@ const Home = () => {
                 {!hasMore && posts.length > 0 && (
                   <div className="flex items-center justify-center space-x-2 py-4 text-muted-foreground text-xs">
                     <CheckCircle className="h-4 w-4 text-primary/70" />
-                    <span>You've reached the end of the feed</span>
+                    <span>You have reached the end of the feed</span>
                   </div>
                 )}
               </div>
@@ -264,7 +272,6 @@ const Home = () => {
         </main>
       </div>
 
-      {/* Floating Scroll To Top Button */}
       <ScrollToTop />
     </div>
   );
