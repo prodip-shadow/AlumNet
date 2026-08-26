@@ -42,25 +42,24 @@ const Sidebar = () => {
 
   return (
     <aside className="w-full lg:w-72 xl:w-80 shrink-0 sticky top-22 self-start max-h-[calc(100vh-6.5rem)] overflow-y-auto space-y-3 pr-2 scrollbar-none">
-      <Link
-        href="/profile"
-        className="flex items-center gap-3.5 p-2.5 rounded-xl  transition-all duration-150 group w-full"
-      >
-        <Avatar className="h-10 w-10 border border-emerald-500/30  transition-transform shrink-0">
-          {user?.profileImageUrl ? (
-            <AvatarImage
-              src={user.profileImageUrl}
-              alt={user?.name || 'Profile'}
-            />
-          ) : null}
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
-            {user?.name
-              ? user.name.slice(0, 2).toUpperCase()
-              : loading
-                ? '...'
-                : 'US'}
-          </AvatarFallback>
-        </Avatar>
+      <div className="flex items-center gap-3.5 p-2.5 rounded-xl  transition-all duration-150 group w-full">
+        <Link href="/profile">
+          <Avatar className="h-10 w-10 border border-emerald-500/30  transition-transform shrink-0">
+            {user?.profileImageUrl ? (
+              <AvatarImage
+                src={user.profileImageUrl}
+                alt={user?.name || 'Profile'}
+              />
+            ) : null}
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
+              {user?.name
+                ? user.name.slice(0, 2).toUpperCase()
+                : loading
+                  ? '...'
+                  : 'US'}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
@@ -85,7 +84,7 @@ const Sidebar = () => {
             </Badge>
           </div>
         </div>
-      </Link>
+      </div>
 
       {/* Thin Separator */}
       <div className="h-px bg-border/60 mx-2" />
