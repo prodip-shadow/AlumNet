@@ -185,9 +185,9 @@ const createEvent = (req, res) => {
 
       const eventId = createResult?.insertId ? Number(createResult.insertId) : null;
 
-      // Trigger NEW_EVENT Notification to active STUDENT and ALUMNI users
+      // Trigger NEW_EVENT Notification to active network users
       db.query(
-        "SELECT id FROM users WHERE isActive = TRUE AND role IN ('STUDENT', 'ALUMNI') AND id != ?",
+        "SELECT id FROM users WHERE (isActive = 1 OR isActive IS NULL) AND id != ?",
         [userId],
         (userErr, userRows) => {
           if (!userErr && userRows && userRows.length > 0) {
@@ -198,7 +198,7 @@ const createEvent = (req, res) => {
               'NEW_EVENT',
               'EVENT',
               eventId,
-              `New event: ${title.trim()}`,
+              `{actor} created a new event: ${title.trim()}`,
               req.app.get('io')
             );
           }
@@ -676,7 +676,7 @@ const registerForEvent = (req, res) => {
             });
           }
 
-          // Trigger EVENT_REGISTRATION Notification
+          // Trigger EVENT_REGISTRATION Notification for attendee
           notificationService.createNotification(
             {
               userId: Number(userId),
@@ -688,6 +688,21 @@ const registerForEvent = (req, res) => {
             },
             req.app.get('io')
           );
+
+          // Notify event creator about new registration
+          if (Number(event.creatorUserId) !== Number(userId)) {
+            notificationService.createNotification(
+              {
+                userId: Number(event.creatorUserId),
+                actorUserId: Number(userId),
+                type: 'EVENT_REGISTRATION',
+                entityType: 'EVENT',
+                referenceId: Number(id),
+                message: `{actor} registered for your event ${event.title}.`,
+              },
+              req.app.get('io')
+            );
+          }
 
           return res.status(201).json({
             success: true,

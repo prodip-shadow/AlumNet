@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '@/lib/axios';
 import { useAuth } from '@/context/AuthContext';
 import Sidebar from '@/components/home/Sidebar';
+import RightEventsSidebar from '@/components/home/RightEventsSidebar';
 import CreatePostCard from '@/components/home/CreatePostCard';
 import PostCard from '@/components/home/PostCard';
 import ScrollToTop from '@/components/home/ScrollToTop';
@@ -200,13 +201,13 @@ const Home = () => {
   };
 
   return (
-    <div className=" px-4 md:px-6 py-6">
-      <div className="flex flex-col lg:flex-row gap-8 items-start relative w-full">
-        {/* Fully Frozen Sticky Left Sidebar */}
+    <div className="px-4 md:px-6 py-6 max-w-[1750px] mx-auto">
+      <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 items-start relative w-full">
+        {/* Left Sidebar */}
         <Sidebar />
 
-        {/* Middle + Right Main Feed Area */}
-        <main className="flex-1 space-y-6 max-w-4xl min-w-0">
+        {/* Middle Main Feed Area */}
+        <main className="flex-1 space-y-6 max-w-3xl min-w-0 mx-auto w-full">
           {/* Share Post Card Component */}
           <CreatePostCard onPostCreated={handlePostCreated} />
 
@@ -270,6 +271,9 @@ const Home = () => {
             </div>
           )}
         </main>
+
+        {/* Right Sidebar: Top 3 Latest Events */}
+        <RightEventsSidebar />
       </div>
 
       <ScrollToTop />

@@ -5,34 +5,37 @@ Your task is to analyze user search requests (which may be in Bangla, English, B
 
 Strict Rules:
 1. Return ONLY a valid JSON object. Do NOT wrap it in markdown code blocks (\`\`\`json). Do NOT add extra text or explanation.
-2. The JSON object MUST contain EXACTLY these 4 keys and NO OTHER KEYS:
+2. The JSON object MUST contain EXACTLY these 7 keys and NO OTHER KEYS:
+   - "position": string or null (job title or role like "Data Scientist", "Software Engineer", "DevOps", "Manager")
+   - "company": string or null (company or organization name like "Enosis", "Google", "Brain Station 23", "Selise")
    - "location": string or null
    - "skill": string or null
    - "session": string or null
    - "project": string or null
-3. All extracted string values MUST ALWAYS BE TRANSLATED TO ENGLISH (e.g., "মালয়েশিয়া" -> "Malaysia", "মেশিন লার্নিং" -> "Machine Learning", "২০২২" -> "2022").
+   - "query": string or null (general search query keywords)
+3. All extracted string values MUST ALWAYS BE TRANSLATED TO ENGLISH (e.g., "মালয়েশিয়া" -> "Malaysia", "ডেটা সায়েন্টিস্ট" -> "Data Scientist", "মেশিন লার্নিং" -> "Machine Learning", "২০২২" -> "2022").
 4. If a filter category is not mentioned in the prompt, set its value to null.
 5. Do NOT invent fake alumni information or SQL. ONLY extract search filter values.
 
 Example 1:
-User: "malaysia te thake ekjon alumni er profile dao je machine learning skill ace"
+User: "data scientist ace emon alumni khuje dao"
 Output:
-{"location":"Malaysia","skill":"Machine Learning","session":null,"project":null}
+{"position":"Data Scientist","company":null,"location":null,"skill":null,"session":null,"project":null,"query":"Data Scientist"}
 
 Example 2:
-User: "Dhaka te thaka 2022 session er alumni chai"
+User: "Enosis Solutions e working position data scientist emon alumni dekhao"
 Output:
-{"location":"Dhaka","skill":null,"session":"2022","project":null}
+{"position":"Data Scientist","company":"Enosis Solutions","location":null,"skill":null,"session":null,"project":null,"query":"Data Scientist Enosis"}
 
 Example 3:
-User: "React.js jana alumni dekhao"
+User: "malaysia te thake ekjon alumni er profile dao je machine learning skill ace"
 Output:
-{"location":null,"skill":"React JS","session":null,"project":null}
+{"position":null,"company":null,"location":"Malaysia","skill":"Machine Learning","session":null,"project":null,"query":"Malaysia Machine Learning"}
 
 Example 4:
-User: "React niye project koreche emon alumni chai"
+User: "Dhaka te thaka 2022 session er alumni chai"
 Output:
-{"location":null,"skill":null,"session":null,"project":"React"}`;
+{"position":null,"company":null,"location":"Dhaka","skill":null,"session":"2022","project":null,"query":"Dhaka 2022"}`;
 
 const extractSearchFiltersWithOpenRouter = async (prompt, apiKey) => {
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -134,10 +137,13 @@ const extractSearchFilters = async (prompt) => {
   };
 
   const finalFilters = {
+    position: sanitizeValue(parsedFilters.position),
+    company: sanitizeValue(parsedFilters.company),
     location: sanitizeValue(parsedFilters.location),
     skill: sanitizeValue(parsedFilters.skill),
     session: sanitizeValue(parsedFilters.session),
     project: sanitizeValue(parsedFilters.project),
+    query: sanitizeValue(parsedFilters.query),
   };
 
   return finalFilters;

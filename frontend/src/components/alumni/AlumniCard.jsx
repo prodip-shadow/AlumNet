@@ -1,12 +1,12 @@
-'use client';
-
-import React, { useState } from 'react';
-import api from '@/lib/axios';
-import { useAuth } from '@/context/AuthContext';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+"use client";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import api from "@/lib/axios";
+import { useAuth } from "@/context/AuthContext";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   Briefcase,
   MapPin,
@@ -17,22 +17,31 @@ import {
   ShieldCheck,
   Eye,
   GraduationCap,
-} from 'lucide-react';
-import { FaLinkedin, FaGithub } from 'react-icons/fa6';
+} from "lucide-react";
+import { toast } from "react-toastify";
+import { FaGithub, FaLinkedin } from "react-icons/fa6";
 
 const AlumniCard = ({
   alumni,
-  onOpenProfile,
   isInitiallyConnected = false,
   isInitiallyPending = false,
 }) => {
   const { user: currentUser } = useAuth();
   const [sending, setSending] = useState(false);
-  const [requestSent, setRequestSent] = useState(isInitiallyPending);
-  const [isConnected, setIsConnected] = useState(isInitiallyConnected);
+  const [requestSent, setRequestSent] = useState(Boolean(isInitiallyPending));
+  const [isConnected, setIsConnected] = useState(Boolean(isInitiallyConnected));
   const [errorMsg, setErrorMsg] = useState(null);
 
-  const isSelf = Number(currentUser?.id) === Number(alumni.userId);
+  const targetUserId = alumni.userId || alumni.id;
+  const isSelf = Number(currentUser?.id) === Number(targetUserId);
+
+  useEffect(() => {
+    setIsConnected(Boolean(isInitiallyConnected));
+  }, [isInitiallyConnected]);
+
+  useEffect(() => {
+    setRequestSent(Boolean(isInitiallyPending));
+  }, [isInitiallyPending]);
 
   const handleSendConnection = async (e) => {
     e.stopPropagation();
@@ -43,18 +52,22 @@ const AlumniCard = ({
 
     try {
       const response = await api.post(
-        `/api/connections/request/${alumni.userId}`
+        `/api/connections/request/${targetUserId}`,
       );
       if (response.data?.success) {
         setRequestSent(true);
+        toast.success(`Connection request sent to ${alumni.name}!`, {
+          autoClose: 1500,
+        });
       }
     } catch (err) {
       const msg =
-        err.response?.data?.message || 'Failed to send connection request';
+        err.response?.data?.message || "Failed to send connection request";
       setErrorMsg(msg);
-      if (msg.toLowerCase().includes('already pending')) {
+      toast.error(msg, { autoClose: 2000 });
+      if (msg.toLowerCase().includes("already pending")) {
         setRequestSent(true);
-      } else if (msg.toLowerCase().includes('already connected')) {
+      } else if (msg.toLowerCase().includes("already connected")) {
         setIsConnected(true);
       }
     } finally {
@@ -62,32 +75,34 @@ const AlumniCard = ({
     }
   };
 
+  const profileHref = `/profile/${alumni.userId || alumni.id}`;
+
   return (
     <Card className="border border-border/80 bg-card hover:border-primary/40 hover:shadow-xs transition-all duration-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group">
       {/* Left Section: Avatar + Details */}
       <div className="flex items-start gap-4 min-w-0 flex-1">
-        <Avatar
-          onClick={() => onOpenProfile(alumni.userId)}
-          className="h-14 w-14 sm:h-16 sm:w-16 border-2 border-border shrink-0 cursor-pointer group-hover:border-primary/40 transition-colors shadow-2xs"
-        >
-          {alumni.profileImageUrl ? (
-            <AvatarImage src={alumni.profileImageUrl} alt={alumni.name} />
-          ) : null}
-          <AvatarFallback className="bg-primary text-primary-foreground font-bold text-sm sm:text-base">
-            {alumni.name ? alumni.name.slice(0, 2).toUpperCase() : 'AL'}
-          </AvatarFallback>
-        </Avatar>
+        <Link href={profileHref} className="shrink-0">
+          <Avatar className="h-14 w-14 sm:h-16 sm:w-16 border-2 border-border shrink-0 cursor-pointer group-hover:border-primary/40 transition-colors shadow-2xs">
+            {alumni.profileImageUrl ? (
+              <AvatarImage src={alumni.profileImageUrl} alt={alumni.name} />
+            ) : null}
+            <AvatarFallback className="bg-primary text-primary-foreground font-bold text-sm sm:text-base">
+              {alumni.name ? alumni.name.slice(0, 2).toUpperCase() : "AL"}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
 
         <div className="flex-1 min-w-0 space-y-1">
           {/* Top Row: Name & Badges */}
           <div className="flex items-center gap-2 flex-wrap">
-            <h3
-              onClick={() => onOpenProfile(alumni.userId)}
-              className="font-bold text-base text-foreground hover:text-primary transition-colors cursor-pointer truncate max-w-[240px] sm:max-w-md"
-              title={alumni.name}
-            >
-              {alumni.name}
-            </h3>
+            <Link href={profileHref}>
+              <h3
+                className="font-bold text-base text-foreground hover:text-primary transition-colors cursor-pointer truncate max-w-[240px] sm:max-w-md"
+                title={alumni.name}
+              >
+                {alumni.name}
+              </h3>
+            </Link>
             <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <Badge
               variant="secondary_1"
@@ -105,9 +120,9 @@ const AlumniCard = ({
           {/* Department / Faculty & Session */}
           <p
             className="text-xs text-muted-foreground truncate"
-            title={alumni.departmentName || alumni.facultyName || ''}
+            title={alumni.departmentName || alumni.facultyName || ""}
           >
-            {alumni.departmentName || alumni.facultyName || 'PSTU Alumni'}
+            {alumni.departmentName || alumni.facultyName || "PSTU Alumni"}
             {alumni.session && ` • Session: ${alumni.session}`}
           </p>
 
@@ -117,7 +132,7 @@ const AlumniCard = ({
               <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" />
               <span className="truncate">
                 {alumni.currentPosition}
-                {alumni.currentPosition && alumni.currentCompany ? ' at ' : ''}
+                {alumni.currentPosition && alumni.currentCompany ? " at " : ""}
                 {alumni.currentCompany}
               </span>
             </div>
@@ -132,58 +147,67 @@ const AlumniCard = ({
               </div>
             )}
 
-            {/* Social Icons */}
+            {/* Social Icons (Respect privacy settings) */}
             <div className="flex items-center gap-2">
-              {alumni.linkedinLink && (
-                <a
-                  href={
-                    alumni.linkedinLink.startsWith('http')
-                      ? alumni.linkedinLink
-                      : `https://${alumni.linkedinLink}`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors p-0.5"
-                  title="LinkedIn"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <FaLinkedin className="h-3.5 w-3.5" />
-                </a>
-              )}
+              {alumni.linkedinLink &&
+                (isSelf ||
+                  isConnected ||
+                  !alumni.visibleContactMethods?.includes("linkedin")) && (
+                  <a
+                    href={
+                      alumni.linkedinLink.startsWith("http")
+                        ? alumni.linkedinLink
+                        : `https://${alumni.linkedinLink}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors p-0.5"
+                    title="LinkedIn"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <FaLinkedin className="h-3.5 w-3.5" />
+                  </a>
+                )}
 
-              {alumni.githubLink && (
-                <a
-                  href={
-                    alumni.githubLink.startsWith('http')
-                      ? alumni.githubLink
-                      : `https://${alumni.githubLink}`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
-                  title="GitHub"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <FaGithub className="h-3.5 w-3.5" />
-                </a>
-              )}
+              {alumni.githubLink &&
+                (isSelf ||
+                  isConnected ||
+                  !alumni.visibleContactMethods?.includes("github")) && (
+                  <a
+                    href={
+                      alumni.githubLink.startsWith("http")
+                        ? alumni.githubLink
+                        : `https://${alumni.githubLink}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                    title="GitHub"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <FaGithub className="h-3.5 w-3.5" />
+                  </a>
+                )}
 
-              {alumni.personalWebsite && (
-                <a
-                  href={
-                    alumni.personalWebsite.startsWith('http')
-                      ? alumni.personalWebsite
-                      : `https://${alumni.personalWebsite}`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-emerald-600 transition-colors p-0.5"
-                  title="Personal Website"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Globe className="h-3.5 w-3.5" />
-                </a>
-              )}
+              {alumni.personalWebsite &&
+                (isSelf ||
+                  isConnected ||
+                  !alumni.visibleContactMethods?.includes("website")) && (
+                  <a
+                    href={
+                      alumni.personalWebsite.startsWith("http")
+                        ? alumni.personalWebsite
+                        : `https://${alumni.personalWebsite}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-emerald-600 transition-colors p-0.5"
+                    title="Personal Website"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Globe className="h-3.5 w-3.5" />
+                  </a>
+                )}
             </div>
           </div>
         </div>
@@ -191,28 +215,29 @@ const AlumniCard = ({
 
       {/* Right Section: Action Buttons */}
       <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/60">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onOpenProfile(alumni.userId)}
-          className="flex-1 sm:flex-initial h-9 px-3.5 text-xs font-semibold gap-1.5 border-border hover:bg-muted/80 cursor-pointer shadow-2xs"
+        <Link
+          href={`/alumni/${alumni.userId || alumni.id}`}
+          className="flex-1 sm:flex-initial"
         >
-          <Eye className="h-3.5 w-3.5" />
-          <span>View Profile</span>
-        </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-9 px-3.5 text-xs font-semibold gap-1.5 border-border hover:bg-muted/80 cursor-pointer shadow-2xs"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            <span>View Profile</span>
+          </Button>
+        </Link>
 
         {!isSelf && (
           <Button
             size="sm"
             onClick={handleSendConnection}
-            disabled={
-              sending || requestSent || isConnected || !currentUser
-            }
-            className={`flex-1 sm:flex-initial h-9 px-4 text-xs font-semibold gap-1.5 cursor-pointer shadow-2xs ${
-              isConnected || requestSent
-                ? 'bg-muted text-muted-foreground hover:bg-muted border border-border'
-                : 'bg-primary text-primary-foreground hover:bg-primary/90'
-            }`}
+            disabled={sending || requestSent || isConnected || !currentUser}
+            className={`flex-1 sm:flex-initial h-9 px-4 text-xs font-semibold gap-1.5 cursor-pointer shadow-2xs ${isConnected || requestSent
+                ? "bg-muted text-muted-foreground hover:bg-muted border border-border"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
+              }`}
           >
             {sending ? (
               <>
@@ -252,4 +277,3 @@ const AlumniCard = ({
 };
 
 export default AlumniCard;
-

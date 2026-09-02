@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/axios';
 import { useForm } from 'react-hook-form';
+import { toast } from 'react-toastify';
 import {
   ArrowLeft,
   User,
@@ -84,20 +85,25 @@ export default function RegisterPage() {
 
       const response = await api.post('/api/auth/register', formData);
 
+      const successMsg = response.data.message || 'Registration successful! Please log in.';
       setStatusMessage({
         type: 'success',
-        text: response.data.message,
+        text: successMsg,
       });
+      toast.success(successMsg, { autoClose: 1500 });
+
       setTimeout(() => {
         router.push('/login');
       }, 1000);
     } catch (error) {
+      const errorMsg =
+        error.response?.data?.message ||
+        'Registration failed. Please try again.';
       setStatusMessage({
         type: 'error',
-        text:
-          error.response?.data?.message ||
-          'Registration failed. Please try again.',
+        text: errorMsg,
       });
+      toast.error(errorMsg, { autoClose: 2000 });
     }
   };
 

@@ -253,7 +253,21 @@ const executeAlumniSearch = (filters, resolvedSkill, resolvedSession, callback) 
 
   const values = [];
 
-  // 1. Location Filter
+  // 1. Position Filter (Fuzzy partial match e.g. "Data Scientist" matches "Data Scientist at Enosis Solutions")
+  if (filters.position) {
+    const posPattern = `%${filters.position.trim()}%`;
+    sql += ` AND (alumni_profiles.currentPosition LIKE ? OR alumni_profiles.bio LIKE ?)`;
+    values.push(posPattern, posPattern);
+  }
+
+  // 2. Company Filter (Fuzzy partial match e.g. "Enosis" matches "Enosis Solutions")
+  if (filters.company) {
+    const compPattern = `%${filters.company.trim()}%`;
+    sql += ` AND (alumni_profiles.currentCompany LIKE ? OR alumni_profiles.currentPosition LIKE ?)`;
+    values.push(compPattern, compPattern);
+  }
+
+  // 3. Location Filter
   if (filters.location) {
     let locClean = filters.location.replace(/\s+(city|district|country|town|area)$/i, '').trim();
     sql += ` AND (alumni_profiles.currentLocation LIKE ? OR alumni_profiles.district LIKE ?)`;
@@ -261,7 +275,7 @@ const executeAlumniSearch = (filters, resolvedSkill, resolvedSession, callback) 
     values.push(locPattern, locPattern);
   }
 
-  // 2. Skill Filter (Using resolved canonical skill ID)
+  // 4. Skill Filter (Using resolved canonical skill ID)
   if (resolvedSkill) {
     sql += ` AND users.id IN (
       SELECT us.userId
@@ -271,14 +285,14 @@ const executeAlumniSearch = (filters, resolvedSkill, resolvedSession, callback) 
     values.push(resolvedSkill.id);
   }
 
-  // 3. Session Filter (Using resolved canonical session string)
+  // 5. Session Filter (Using resolved canonical session string)
   const sessionToSearch = resolvedSession || filters.session;
   if (sessionToSearch) {
     sql += ` AND alumni_profiles.session LIKE ?`;
     values.push(`%${sessionToSearch}%`);
   }
 
-  // 4. Project Filter
+  // 6. Project Filter
   if (filters.project) {
     let projNorm = normalizeSkillName(filters.project);
     sql += ` AND users.id IN (
@@ -289,6 +303,22 @@ const executeAlumniSearch = (filters, resolvedSkill, resolvedSession, callback) 
     const rawProjPattern = `%${filters.project}%`;
     const normProjPattern = `%${projNorm || filters.project}%`;
     values.push(rawProjPattern, rawProjPattern, normProjPattern, normProjPattern);
+  }
+
+  // 7. General Smart Query Fallback (Searches across currentPosition, currentCompany, bio, district, name, faculty, department)
+  if (filters.query && !filters.position && !filters.company && !filters.location && !resolvedSkill && !sessionToSearch && !filters.project) {
+    const qPattern = `%${filters.query.trim()}%`;
+    sql += ` AND (
+      alumni_profiles.currentPosition LIKE ? OR
+      alumni_profiles.currentCompany LIKE ? OR
+      alumni_profiles.bio LIKE ? OR
+      alumni_profiles.currentLocation LIKE ? OR
+      alumni_profiles.district LIKE ? OR
+      faculties.name LIKE ? OR
+      departments.name LIKE ? OR
+      users.name LIKE ?
+    )`;
+    values.push(qPattern, qPattern, qPattern, qPattern, qPattern, qPattern, qPattern, qPattern);
   }
 
   sql += ` ORDER BY users.name ASC`;

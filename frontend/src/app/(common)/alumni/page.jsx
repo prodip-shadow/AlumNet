@@ -5,7 +5,6 @@ import api from '@/lib/axios';
 import { useAuth } from '@/context/AuthContext';
 import AlumniCard from '@/components/alumni/AlumniCard';
 import AlumniCardSkeleton from '@/components/alumni/AlumniCardSkeleton';
-import AlumniProfileModal from '@/components/alumni/AlumniProfileModal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +18,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 10;
 
 const AlumniDirectoryPage = () => {
   const { user } = useAuth();
@@ -33,10 +32,6 @@ const AlumniDirectoryPage = () => {
   const [sortBy, setSortBy] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-
-  // Modal State
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // User's existing connections
   const [connectedUserIds, setConnectedUserIds] = useState(new Set());
@@ -61,12 +56,15 @@ const AlumniDirectoryPage = () => {
       ) {
         const ids = new Set();
         connectionsRes.value.data.connections.forEach((c) => {
-          if (c.requesterId && c.recipientId) {
-            ids.add(
-              Number(c.requesterId) === Number(user.id)
-                ? Number(c.recipientId)
-                : Number(c.requesterId),
-            );
+          const cId =
+            c.connectedUserId ||
+            (c.requesterId && c.recipientId
+              ? Number(c.requesterId) === Number(user.id)
+                ? c.recipientId
+                : c.requesterId
+              : c.userId);
+          if (cId) {
+            ids.add(Number(cId));
           }
         });
         setConnectedUserIds(ids);
@@ -78,7 +76,9 @@ const AlumniDirectoryPage = () => {
         Array.isArray(outgoingRes.value.data.requests)
       ) {
         const pIds = new Set(
-          outgoingRes.value.data.requests.map((r) => Number(r.recipientId)),
+          outgoingRes.value.data.requests.map((r) =>
+            Number(r.recipientId || r.targetUserId || r.userId)
+          )
         );
         setPendingUserIds(pIds);
       }
@@ -318,17 +318,17 @@ const AlumniDirectoryPage = () => {
       ) : (
         <div className="space-y-6">
           <div className="flex flex-col space-y-3.5">
-            {alumniList.map((alumni) => (
-              <AlumniCard
-                key={alumni.id || alumni.userId}
-                alumni={alumni}
-                onOpenProfile={handleOpenProfileModal}
-                isInitiallyConnected={connectedUserIds.has(
-                  Number(alumni.userId),
-                )}
-                isInitiallyPending={pendingUserIds.has(Number(alumni.userId))}
-              />
-            ))}
+            {alumniList.map((alumni) => {
+              const uId = Number(alumni.userId || alumni.id);
+              return (
+                <AlumniCard
+                  key={uId}
+                  alumni={alumni}
+                  isInitiallyConnected={connectedUserIds.has(uId)}
+                  isInitiallyPending={pendingUserIds.has(uId)}
+                />
+              );
+            })}
           </div>
 
           {/* Pagination Navigation Controls */}
@@ -362,16 +362,6 @@ const AlumniDirectoryPage = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Alumni Detail Profile Modal */}
-      {selectedUserId && (
-        <AlumniProfileModal
-          userId={selectedUserId}
-          isOpen={isModalOpen}
-          onClose={handleCloseProfileModal}
-          onConnectionSent={handleConnectionSent}
-        />
       )}
     </div>
   );

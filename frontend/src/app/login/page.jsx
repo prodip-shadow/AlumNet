@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/axios';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -38,10 +39,12 @@ export default function LoginPage() {
         password: data.password,
       });
 
+      const successMsg = response.data.message || 'Login successful! Welcome back.';
       setStatusMessage({
         type: 'success',
-        text: response.data.message,
+        text: successMsg,
       });
+      toast.success(successMsg, { autoClose: 1500 });
 
       await fetchCurrentUser();
 
@@ -49,10 +52,12 @@ export default function LoginPage() {
         router.push('/');
       }, 1000);
     } catch (error) {
+      const errorMsg = error.response?.data?.message || 'Login failed. Please try again.';
       setStatusMessage({
         type: 'error',
-        text: error.response?.data?.message || 'Login failed. Please try again.',
+        text: errorMsg,
       });
+      toast.error(errorMsg, { autoClose: 2000 });
     }
   };
   return (

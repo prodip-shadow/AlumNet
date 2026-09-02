@@ -31,5 +31,8 @@ router.put(
   profileController.updateProfilePicture,
 );
 
+// Get User Profile by ID (Supports Student and Alumni)
+router.get('/user/:id', verifyToken, profileController.getUserProfileById);
+
 module.exports = router;
 

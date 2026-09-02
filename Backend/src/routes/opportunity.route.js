@@ -37,6 +37,13 @@ router.get(
   opportunityController.getMyApplications,
 );
 
+router.get(
+  '/applications/my',
+  verifyToken,
+  allowRoles('STUDENT'),
+  opportunityController.getMyApplications,
+);
+
 // Get Opportunity By ID (Restricted if CLOSED)
 router.get(
   '/:id',

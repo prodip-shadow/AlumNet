@@ -51,6 +51,13 @@ router.get(
 );
 
 router.get(
+  '/my-events',
+  verifyToken,
+  allowRoles('ADMIN', 'ALUMNI', 'STUDENT'),
+  eventController.getMyEvents,
+);
+
+router.get(
   '/:id',
   verifyToken,
   eventController.getEventById,

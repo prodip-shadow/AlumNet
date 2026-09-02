@@ -91,6 +91,10 @@ const getUserSkills = (userId, callback) => {
 
 // Check Skills By Ids
 const getSkillsByIds = (skillIds, callback) => {
+  if (!Array.isArray(skillIds) || skillIds.length === 0) {
+    return callback(null, []);
+  }
+
   const sql = `
     SELECT id
     FROM skills

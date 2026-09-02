@@ -93,6 +93,7 @@ const getAlumniProfileById = (req, res) => {
           success: true,
           profile: alumniProfile,
           isConnected,
+          connectionId: isConnected ? connectionResult[0].id : null,
         });
       });
     });

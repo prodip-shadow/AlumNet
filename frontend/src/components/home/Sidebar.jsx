@@ -9,9 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import {
   LayoutDashboard,
   Users,
-  Settings,
+  Briefcase,
+  Calendar,
+  User,
   ShieldCheck,
   ChevronRight,
+  GraduationCap,
 } from 'lucide-react';
 
 const navItems = [
@@ -21,14 +24,29 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
-    title: 'All Connections',
+    title: 'Alumni Directory',
+    href: '/alumni',
+    icon: GraduationCap,
+  },
+  {
+    title: 'Opportunities',
+    href: '/opportunities',
+    icon: Briefcase,
+  },
+  {
+    title: 'Events',
+    href: '/events',
+    icon: Calendar,
+  },
+  {
+    title: 'My Connections',
     href: '/connections',
     icon: Users,
   },
   {
-    title: 'Settings',
-    href: '#',
-    icon: Settings,
+    title: 'My Profile',
+    href: '/profile',
+    icon: User,
   },
 ];
 
@@ -37,33 +55,34 @@ const Sidebar = () => {
   const { user, loading } = useAuth();
 
   const userRoleDisplay = user?.role
-    ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
-    : 'Alumni';
+    ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
+    : 'Guest';
 
   return (
     <aside className="w-full lg:w-72 xl:w-80 shrink-0 sticky top-22 self-start max-h-[calc(100vh-6.5rem)] overflow-y-auto space-y-3 pr-2 scrollbar-none">
-      <div className="flex items-center gap-3.5 p-2.5 rounded-xl  transition-all duration-150 group w-full">
-        <Link href="/profile">
-          <Avatar className="h-10 w-10 border border-emerald-500/30  transition-transform shrink-0">
-            {user?.profileImageUrl ? (
-              <AvatarImage
-                src={user.profileImageUrl}
-                alt={user?.name || 'Profile'}
-              />
-            ) : null}
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
-              {user?.name
-                ? user.name.slice(0, 2).toUpperCase()
-                : loading
-                  ? '...'
-                  : 'US'}
-            </AvatarFallback>
-          </Avatar>
-        </Link>
+      <Link
+        href={user?.id ? `/profile/${user.id}` : '/profile'}
+        className="flex items-center gap-3.5 p-2.5 rounded-xl transition-all duration-150 group w-full bg-card border border-border shadow-2xs hover:border-primary/40"
+      >
+        <Avatar className="h-10 w-10 border border-border transition-transform shrink-0 group-hover:ring-2 group-hover:ring-primary/40">
+          {user?.profileImageUrl ? (
+            <AvatarImage
+              src={user.profileImageUrl}
+              alt={user?.name || 'Profile'}
+            />
+          ) : null}
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
+            {user?.name
+              ? user.name.slice(0, 2).toUpperCase()
+              : loading
+                ? '...'
+                : 'US'}
+          </AvatarFallback>
+        </Avatar>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <h2 className="font-semibold text-sm text-foreground truncate  transition-colors">
+            <h2 className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">
               {loading ? (
                 <span className="inline-block w-24 h-4 bg-muted animate-pulse rounded" />
               ) : (
@@ -71,75 +90,45 @@ const Sidebar = () => {
               )}
             </h2>
             {user?.role && (
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
             )}
           </div>
 
           <div className="mt-0.5">
             <Badge
-              variant="secondary_1"
-              className="px-2 py-0 text-[10px] font-medium bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-none"
+              variant="secondary"
+              className="px-2 py-0 text-[10px] font-semibold bg-primary/10 text-primary border-none"
             >
               {userRoleDisplay}
             </Badge>
           </div>
         </div>
-      </div>
+      </Link>
 
-      {/* Thin Separator */}
-      <div className="h-px bg-border/60 mx-2" />
-
-      {/* Navigation List (Full Width Flat Items) */}
-      <nav className="space-y-1 w-full">
+      {/* Navigation List */}
+      <nav className="space-y-1 w-full pt-1">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
 
           return (
             <Link
               key={item.title}
               href={item.href}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 group w-full ${
-                isActive
-                  ? 'bg-emerald-600/15 text-emerald-800 dark:text-emerald-300 font-semibold'
-                  : 'text-foreground/80 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300'
-              }`}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${isActive
+                  ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                }`}
             >
               <div className="flex items-center gap-3">
-                <div
-                  className={`p-1.5 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                </div>
+                <Icon className={`h-4 w-4 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
                 <span>{item.title}</span>
               </div>
-
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:translate-x-0.5 transition-transform" />
+              <ChevronRight className={`h-3.5 w-3.5 opacity-50 ${isActive ? 'opacity-90' : ''}`} />
             </Link>
           );
         })}
       </nav>
-
-      <div className="h-px bg-border/60 mx-2" />
-
-      {/* Footer Links */}
-      <div className="pt-3 px-3 text-[10px] text-muted-foreground flex flex-wrap gap-x-2 gap-y-1 w-full">
-        <a href="#" className="hover:underline">
-          Privacy
-        </a>
-        <span>•</span>
-        <a href="#" className="hover:underline">
-          Terms
-        </a>
-        <span>•</span>
-        <a href="#" className="hover:underline">
-          AlumNet © 2026
-        </a>
-      </div>
     </aside>
   );
 };

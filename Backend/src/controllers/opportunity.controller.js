@@ -1,3 +1,4 @@
+const db = require('../config/db');
 const opportunityModel = require('../models/opportunity.model');
 const notificationService = require('../services/notification.service');
 
@@ -41,13 +42,35 @@ const createOpportunity = (req, res) => {
 
   opportunityModel.createOpportunity(
     [userId, type, content.trim(), cvRequired],
-    (err) => {
+    (err, result) => {
       if (err) {
         return res.status(500).json({
           success: false,
           message: 'Server Error',
         });
       }
+
+      const oppId = result?.insertId ? Number(result.insertId) : null;
+
+      // Broadcast notification to active network members
+      db.query(
+        "SELECT id FROM users WHERE (isActive = 1 OR isActive IS NULL) AND id != ?",
+        [userId],
+        (uErr, uRows) => {
+          if (!uErr && uRows && uRows.length > 0) {
+            const targetUserIds = uRows.map((r) => r.id);
+            notificationService.createBulkNotifications(
+              targetUserIds,
+              userId,
+              'NEW_OPPORTUNITY',
+              'OPPORTUNITY',
+              oppId,
+              `{actor} posted a new ${type.toLowerCase()} opportunity.`,
+              req.app.get('io')
+            );
+          }
+        }
+      );
 
       return res.status(201).json({
         success: true,
@@ -414,6 +437,21 @@ const applyOpportunity = (req, res) => {
             success: false,
             message: 'Server Error',
           });
+        }
+
+        // Notify opportunity owner about new application
+        if (Number(opportunity.userId) !== Number(studentId)) {
+          notificationService.createNotification(
+            {
+              userId: Number(opportunity.userId),
+              actorUserId: Number(studentId),
+              type: 'OPPORTUNITY_APPLICATION',
+              entityType: 'OPPORTUNITY',
+              referenceId: Number(id),
+              message: '{actor} applied for your opportunity.',
+            },
+            req.app.get('io')
+          );
         }
 
         return res.status(201).json({

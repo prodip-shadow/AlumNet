@@ -308,6 +308,30 @@ const getUserPaymentHistory = (userId, callback) => {
   db.query(sql, [userId], callback);
 };
 
+// Get Registration By Payment Intent ID
+const getRegistrationByPaymentIntentId = (paymentIntentId, callback) => {
+  const sql = `
+    SELECT *
+    FROM event_registrations
+    WHERE paymentIntentId = ?
+  `;
+
+  db.query(sql, [paymentIntentId], callback);
+};
+
+// Update Registration Payment Status By Payment Intent ID
+const updateRegistrationByPaymentIntentId = (paymentIntentId, paymentStatus, registrationStatus, callback) => {
+  const sql = `
+    UPDATE event_registrations
+    SET
+      paymentStatus = ?,
+      registrationStatus = ?
+    WHERE paymentIntentId = ?
+  `;
+
+  db.query(sql, [paymentStatus, registrationStatus, paymentIntentId], callback);
+};
+
 module.exports = {
   checkCreatorPermission,
   grantCreatorPermission,
@@ -324,7 +348,9 @@ module.exports = {
   createFreeRegistration,
   upsertPendingRegistration,
   getRegistrationByStripeSessionId,
+  getRegistrationByPaymentIntentId,
   updateRegistrationPaymentStatus,
+  updateRegistrationByPaymentIntentId,
   getEventRegistrations,
   getUserPaymentHistory,
 };

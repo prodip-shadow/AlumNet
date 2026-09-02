@@ -24,30 +24,15 @@ const queryAlumniAssistant = async (req, res) => {
       });
     }
 
-    // Step 2: Validate if at least one of the 4 search filters is present
-    const hasValidFilter = Object.values(filters).some(
-      (val) => val !== null && val !== undefined && String(val).trim().length > 0,
-    );
-
-    if (!hasValidFilter) {
-      return res.status(400).json({
-        success: false,
-        message: 'No valid search criteria could be identified from your prompt. Please specify criteria like location, skill, session, or project.',
-        filters: {
-          location: null,
-          skill: null,
-          session: null,
-          project: null,
-        },
-      });
-    }
-
-    // Ensure filters object contains strictly location, skill, session, project
+    // Step 2: Ensure clean filters object
     const cleanFilters = {
+      position: filters.position || null,
+      company: filters.company || null,
       location: filters.location || null,
       skill: filters.skill || null,
       session: filters.session || null,
       project: filters.project || null,
+      query: filters.query || prompt.trim(),
     };
 
     // Step 3: Query Database using structured parameters and database-aware matching

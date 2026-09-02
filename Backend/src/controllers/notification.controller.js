@@ -18,10 +18,17 @@ const getNotifications = (req, res) => {
       });
     }
 
-    const formattedNotifications = notifications.map((n) => ({
-      ...n,
-      isRead: Boolean(n.isRead),
-    }));
+    const formattedNotifications = notifications.map((n) => {
+      let msg = n.message || '';
+      if (/{actor\s*}/i.test(msg)) {
+        msg = msg.replace(/{actor\s*}/gi, n.actorName || 'Someone');
+      }
+      return {
+        ...n,
+        message: msg,
+        isRead: Boolean(n.isRead),
+      };
+    });
 
     return res.status(200).json({
       success: true,

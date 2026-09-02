@@ -26,6 +26,7 @@ const getAlumniDirectory = (search, sort, limit, offset, callback) => {
       alumni_profiles.linkedinLink,
       alumni_profiles.facebookLink,
       alumni_profiles.personalWebsite,
+      alumni_profiles.visibleContactMethods,
       COALESCE(alumni_profiles.createdAt, users.createdAt) AS createdAt,
       faculties.name AS facultyName,
       departments.name AS departmentName

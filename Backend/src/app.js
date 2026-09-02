@@ -44,6 +44,7 @@ app.use(cookieParser());
 
 // Mount payment routes BEFORE general json parser for raw webhook body support
 app.use('/api/payments', paymentRoutes);
+app.use('/api/stripe', paymentRoutes);
 
 
 app.use(express.json());

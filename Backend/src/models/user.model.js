@@ -70,6 +70,16 @@ const updateUserRole = (id, role, callback) => {
   db.query(sql, [role, id], callback);
 };
 
+// Update User Name
+const updateUserName = (id, name, callback) => {
+  const sql = `
+    UPDATE users
+    SET name = ?
+    WHERE id = ?
+  `;
+
+  db.query(sql, [name, id], callback);
+};
 
 module.exports = {
   createUser,
@@ -79,5 +89,6 @@ module.exports = {
   clearRefreshToken,
   getUserByRefreshToken,
   updateUserRole,
+  updateUserName,
 };
 

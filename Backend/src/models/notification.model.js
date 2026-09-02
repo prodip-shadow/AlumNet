@@ -53,18 +53,22 @@ const getNotificationById = (id, callback) => {
 const getUserNotifications = (userId, limit, offset, callback) => {
   const sql = `
     SELECT
-      id,
-      userId,
-      actorUserId,
-      type,
-      entityType,
-      referenceId,
-      message,
-      isRead,
-      createdAt
+      notifications.id,
+      notifications.userId,
+      notifications.actorUserId,
+      users.name AS actorName,
+      users.profileImageUrl AS actorProfileImageUrl,
+      notifications.type,
+      notifications.entityType,
+      notifications.referenceId,
+      notifications.message,
+      notifications.isRead,
+      notifications.createdAt
     FROM notifications
-    WHERE userId = ?
-    ORDER BY createdAt DESC
+    LEFT JOIN users
+      ON notifications.actorUserId = users.id
+    WHERE notifications.userId = ?
+    ORDER BY notifications.createdAt DESC
     LIMIT ? OFFSET ?
   `;
 
