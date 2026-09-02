@@ -1,6 +1,7 @@
 
 const bcrypt = require('bcryptjs');
 const userModel = require('../models/user.model');
+const eventModel = require('../models/event.model');
 const jwt = require('jsonwebtoken');
 
 
@@ -124,21 +125,28 @@ const login = async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
-      return res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
+      const sendLoginResponse = (canCreateEvent) => {
+        return res.status(200).json({
+          success: true,
+          message: 'Login successful',
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            canCreateEvent,
+          },
+        });
+      };
+
+      if (user.role === 'ADMIN') {
+        return sendLoginResponse(true);
+      }
+
+      eventModel.checkCreatorPermission(user.id, (permErr, permResult) => {
+        const canCreateEvent = Boolean(!permErr && permResult && permResult.length > 0);
+        return sendLoginResponse(canCreateEvent);
       });
-
-
-
-
-
     });
   });
 };
@@ -162,15 +170,27 @@ const me = (req, res) => {
 
     const user = result[0];
 
-    return res.status(200).json({
-      success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        profileImageUrl: user.profileImageUrl,
-      },
+    const sendResponse = (canCreateEvent) => {
+      return res.status(200).json({
+        success: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          profileImageUrl: user.profileImageUrl,
+          canCreateEvent,
+        },
+      });
+    };
+
+    if (user.role === 'ADMIN') {
+      return sendResponse(true);
+    }
+
+    eventModel.checkCreatorPermission(user.id, (permErr, permResult) => {
+      const canCreateEvent = Boolean(!permErr && permResult && permResult.length > 0);
+      return sendResponse(canCreateEvent);
     });
   });
 };

@@ -435,7 +435,7 @@ const AlumniDashboard = () => {
           { id: 'profile', label: 'My Profile & Privacy', icon: User },
           { id: 'projects', label: 'My Projects Showcase', icon: FolderGit2 },
           { id: 'opportunities', label: `My Opportunities (${myOpportunities.length})`, icon: Briefcase },
-          { id: 'events', label: `My Events (${myEvents.length})`, icon: Calendar },
+          ...(user && (user.role === 'ADMIN' || user.canCreateEvent) ? [{ id: 'events', label: `My Events (${myEvents.length})`, icon: Calendar }] : []),
           { id: 'payments', label: 'Payment History', icon: CreditCard },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -838,7 +838,7 @@ const AlumniDashboard = () => {
       )}
 
       {/* Tab 3: My Events */}
-      {activeTab === 'events' && (
+      {activeTab === 'events' && Boolean(user && (user.role === 'ADMIN' || user.canCreateEvent)) && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>

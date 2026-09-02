@@ -323,7 +323,7 @@ const StudentDashboard = () => {
           { id: 'projects', label: 'Projects Showcase', icon: FolderGit2 },
           { id: 'migration', label: 'Alumni Migration Hub', icon: GraduationCap },
           { id: 'applications', label: `My Job Applications (${myApplications.length})`, icon: Briefcase },
-          { id: 'events', label: 'Hosted Events', icon: Calendar },
+          ...(user && (user.role === 'ADMIN' || user.canCreateEvent) ? [{ id: 'events', label: 'My Events', icon: Calendar }] : []),
           { id: 'payments', label: 'Payment History', icon: CreditCard },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -756,7 +756,7 @@ const StudentDashboard = () => {
       {activeTab === 'projects' && <ProjectsSection isOwner={true} />}
 
       {/* Tab 5: Hosted Events & Registrations */}
-      {activeTab === 'events' && <MyCreatedEventsSection />}
+      {activeTab === 'events' && Boolean(user && (user.role === 'ADMIN' || user.canCreateEvent)) && <MyCreatedEventsSection />}
 
       {/* Tab 6: Payment History & Receipts */}
       {activeTab === 'payments' && <PaymentHistorySection />}

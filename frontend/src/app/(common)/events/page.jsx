@@ -328,7 +328,7 @@ const EventPage = () => {
             </Button>
           )}
 
-          {user && (user.role === 'ADMIN' || user.role === 'ALUMNI') && (
+          {user && (user.role === 'ADMIN' || user.canCreateEvent) && (
             <Button
               size="sm"
               onClick={handleOpenCreateModal}
