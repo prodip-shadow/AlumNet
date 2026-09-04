@@ -91,7 +91,7 @@ const getAllEvents = (limit, offset, callback) => {
     INNER JOIN users
       ON events.creatorUserId = users.id
     WHERE events.status = 'ACTIVE'
-    ORDER BY events.eventDate ASC
+    ORDER BY events.createdAt DESC, events.eventDate ASC
     LIMIT ? OFFSET ?
   `;
 

@@ -159,6 +159,16 @@ const StudentDashboard = () => {
     fetchMyApplications();
   }, [fetchProfile, fetchMigrationApp, fetchMyApplications]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab) {
+        setActiveTab(tab);
+      }
+    }
+  }, []);
+
   // Handle Profile Picture Upload
   const handlePictureChange = async (e) => {
     const file = e.target.files?.[0];

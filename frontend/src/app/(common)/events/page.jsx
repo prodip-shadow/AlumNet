@@ -75,25 +75,22 @@ const EventPage = () => {
     else toast.info(msg, { autoClose: 1500 });
   };
 
-  const fetchEvents = useCallback(async () => {
-    setLoading(true);
+  const fetchEvents = useCallback(async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
-      const res = await api.get('/api/events');
+      const res = await api.get('/api/events?pageSize=100');
       if (res.data?.success && Array.isArray(res.data.events)) {
         setEvents(res.data.events);
-      } else {
-        setEvents([]);
       }
     } catch (err) {
       console.error('Error fetching events:', err);
-      setEvents([]);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchEvents();
+    fetchEvents(true);
 
     if (user) {
       api.get('/api/payments/history')
@@ -208,22 +205,26 @@ const EventPage = () => {
       if (bannerFile) formData.append('banner', bannerFile);
 
       if (editingEvent) {
-        const res = await api.put(`/api/events/${editingEvent.id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        const res = await api.put(`/api/events/${editingEvent.id}`, formData);
         if (res.data?.success) {
           showFeedback('success', 'Event updated successfully!');
           setIsCreateModalOpen(false);
-          fetchEvents();
+          fetchEvents(false);
         }
       } else {
-        const res = await api.post('/api/events', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        const res = await api.post('/api/events', formData);
         if (res.data?.success) {
           showFeedback('success', 'Event created and published successfully!');
           setIsCreateModalOpen(false);
-          fetchEvents();
+          setFilterType('ALL');
+          setSearchQuery('');
+          if (res.data.event) {
+            setEvents((prev) => [
+              res.data.event,
+              ...prev.filter((e) => Number(e.id) !== Number(res.data.event.id)),
+            ]);
+          }
+          fetchEvents(false);
         }
       }
     } catch (err) {

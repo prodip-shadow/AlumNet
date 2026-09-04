@@ -51,10 +51,8 @@ const ConnectionsPage = () => {
       const promises = [
         api.get('/api/connections'),
         api.get('/api/connections/outgoing'),
+        api.get('/api/connections/incoming'),
       ];
-      if (!isStudent) {
-        promises.push(api.get('/api/connections/incoming'));
-      }
 
       const results = await Promise.allSettled(promises);
       const connRes = results[0];
@@ -75,11 +73,23 @@ const ConnectionsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, isStudent]);
+  }, [user]);
 
   useEffect(() => {
     fetchConnectionsData();
   }, [fetchConnectionsData]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab) {
+        if (tab === 'received' || tab === 'incoming') setActiveTab('incoming');
+        else if (tab === 'sent' || tab === 'outgoing') setActiveTab('outgoing');
+        else if (tab === 'connections') setActiveTab('connections');
+      }
+    }
+  }, []);
 
   // Handle Accept
   const handleAccept = async (reqId, reqName) => {
@@ -175,9 +185,7 @@ const ConnectionsPage = () => {
 
   const tabs = [
     { id: 'connections', label: `My Connections (${connections.length})`, icon: Users },
-    ...(!isStudent
-      ? [{ id: 'incoming', label: `Received (${incoming.length})`, icon: UserCheck, badge: incoming.length }]
-      : []),
+    { id: 'incoming', label: `Received (${incoming.length})`, icon: UserCheck, badge: incoming.length },
     { id: 'outgoing', label: `Sent (${outgoing.length})`, icon: Clock },
   ];
 
@@ -316,8 +324,8 @@ const ConnectionsPage = () => {
         </div>
       )}
 
-      {/* Tab 2: Incoming Requests (Only for Alumni and Admin) */}
-      {activeTab === 'incoming' && !isStudent && (
+      {/* Tab 2: Incoming Requests */}
+      {activeTab === 'incoming' && (
         <div className="space-y-4">
           {loading ? (
             <div className="p-12 text-center text-xs text-muted-foreground">Loading received requests...</div>

@@ -276,6 +276,16 @@ const AdminDashboard = () => {
     }
   }, [activeTab, fetchPermCandidates]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab) {
+        setActiveTab(tab);
+      }
+    }
+  }, []);
+
   // User Actions
   const handleToggleUserStatus = async (userId) => {
     try {

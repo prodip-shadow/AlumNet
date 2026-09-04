@@ -205,10 +205,32 @@ const createEvent = (req, res) => {
         }
       );
 
-      return res.status(201).json({
-        success: true,
-        message: 'Event created successfully',
-      });
+      if (eventId) {
+        eventModel.getEventById(eventId, (getErr, getResult) => {
+          let createdEvent = (!getErr && getResult && getResult.length > 0) ? getResult[0] : null;
+          if (createdEvent) {
+            createdEvent = {
+              ...createdEvent,
+              isFree: Boolean(createdEvent.isFree),
+              isRegistrationOpen: Boolean(createdEvent.isRegistrationOpen),
+              currentRegistrationCount: Number(createdEvent.currentRegistrationCount || 0),
+              remainingSeats: createdEvent.maxParticipants
+                ? Math.max(0, createdEvent.maxParticipants - Number(createdEvent.currentRegistrationCount || 0))
+                : null,
+            };
+          }
+          return res.status(201).json({
+            success: true,
+            message: 'Event created successfully',
+            event: createdEvent,
+          });
+        });
+      } else {
+        return res.status(201).json({
+          success: true,
+          message: 'Event created successfully',
+        });
+      }
     });
   };
 
@@ -245,7 +267,7 @@ const createEvent = (req, res) => {
 // Get All Events (Feed - ACTIVE only)
 const getAllEvents = (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  const pageSize = Math.max(1, parseInt(req.query.pageSize) || 10);
+  const pageSize = Math.max(1, parseInt(req.query.pageSize) || 100);
 
   const limit = pageSize;
   const offset = (page - 1) * pageSize;

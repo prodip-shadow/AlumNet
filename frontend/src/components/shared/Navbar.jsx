@@ -214,26 +214,76 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Notification click router: Automatically directs user to destination
+  // Notification click router: Automatically directs user to precise target tab/route
   const handleNotificationClick = (notif) => {
     setNotifOpen(false);
+    const type = notif.type;
+    const entityType = notif.entityType;
     const msg = notif.message?.toLowerCase() || '';
 
-    if (msg.includes('connection') || msg.includes('request') || msg.includes('connect')) {
-      router.push('/connections');
-    } else if (msg.includes('opportunity') || msg.includes('applied') || msg.includes('applicant') || msg.includes('job')) {
-      if (user?.role === 'ALUMNI' || user?.role === 'ADMIN') {
-        router.push('/dashboard');
-      } else {
-        router.push('/opportunities');
-      }
-    } else if (msg.includes('event') || msg.includes('meetup') || msg.includes('registered')) {
-      router.push('/events');
-    } else if (msg.includes('verification') || msg.includes('migration') || msg.includes('verified')) {
-      router.push('/dashboard');
-    } else {
-      router.push('/');
+    // 1. Connection Requests & Acceptances
+    if (type === 'CONNECTION_REQUEST' || msg.includes('connection request') || (msg.includes('request') && msg.includes('connect'))) {
+      router.push('/connections?tab=incoming');
+      return;
     }
+    if (type === 'CONNECTION_ACCEPTED' || (msg.includes('accepted') && msg.includes('connection'))) {
+      router.push('/connections?tab=connections');
+      return;
+    }
+
+    // 2. Job Opportunities & Applications
+    if (type === 'OPPORTUNITY_APPLICATION' || msg.includes('applied for') || msg.includes('applicant')) {
+      if (user?.role === 'ALUMNI' || user?.role === 'ADMIN') {
+        router.push('/dashboard?tab=opportunities');
+      } else {
+        router.push('/dashboard?tab=applications');
+      }
+      return;
+    }
+    if (type === 'OPPORTUNITY_STATUS_UPDATE') {
+      router.push('/dashboard?tab=applications');
+      return;
+    }
+    if (type === 'NEW_OPPORTUNITY' || msg.includes('opportunity') || msg.includes('job')) {
+      router.push('/opportunities');
+      return;
+    }
+
+    // 3. Events
+    if (type === 'EVENT_REGISTRATION' && (user?.role === 'ALUMNI' || user?.role === 'ADMIN' || user?.canCreateEvent)) {
+      router.push('/dashboard?tab=events');
+      return;
+    }
+    if (type === 'NEW_EVENT' || type === 'EVENT_CANCELLED' || entityType === 'EVENT' || msg.includes('event')) {
+      router.push('/events');
+      return;
+    }
+
+    // 4. Verification & Migration
+    if (type === 'MIGRATION_APPROVED' || type === 'MIGRATION_REJECTED' || msg.includes('migration')) {
+      if (user?.role === 'ADMIN') {
+        router.push('/dashboard?tab=migrations');
+      } else {
+        router.push('/dashboard?tab=migration');
+      }
+      return;
+    }
+    if (type === 'VERIFICATION_APPROVED' || type === 'VERIFICATION_REJECTED' || msg.includes('verification')) {
+      if (user?.role === 'ADMIN') {
+        router.push('/dashboard?tab=verifications');
+      } else {
+        router.push('/dashboard');
+      }
+      return;
+    }
+
+    // General fallback for connection-related
+    if (msg.includes('connect')) {
+      router.push('/connections?tab=incoming');
+      return;
+    }
+
+    router.push('/');
   };
 
   return (

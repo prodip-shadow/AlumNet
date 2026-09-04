@@ -220,6 +220,16 @@ const AlumniDashboard = () => {
     fetchMyEvents();
   }, [fetchProfile, fetchMyOpportunities, fetchMyEvents]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab) {
+        setActiveTab(tab);
+      }
+    }
+  }, []);
+
   // Handle Save Profile
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -339,9 +349,11 @@ const AlumniDashboard = () => {
     try {
       const res = await api.post('/api/events', {
         title: eventTitle.trim(),
-        description: eventDesc.trim(),
+        description: eventDesc.trim() || eventTitle.trim(),
         eventDate,
+        registrationDeadline: eventDate,
         location: eventLocation.trim(),
+        contactInfo: user?.email || 'events@pstu.ac.bd',
         maxAttendees: Number(eventMaxAttendees) || 100,
         isPaid: eventIsPaid,
         price: eventIsPaid ? Number(eventPrice) : 0,
@@ -354,7 +366,7 @@ const AlumniDashboard = () => {
         setEventDesc('');
         setEventDate('');
         setEventLocation('');
-        fetchMyEvents();
+        await fetchMyEvents();
       }
     } catch (err) {
       showFeedback('error', err.response?.data?.message || 'Failed to create event. (Make sure you have creator permissions)');
