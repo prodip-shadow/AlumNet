@@ -77,9 +77,6 @@ const UserDashboard = () => {
 
       if (facRes.status === 'fulfilled' && facRes.value.data?.success) {
         setFaculties(facRes.value.data.faculties || []);
-        if (facRes.value.data.faculties?.length > 0) {
-          setFacultyId(String(facRes.value.data.faculties[0].id));
-        }
       }
 
       if (deptRes.status === 'fulfilled' && deptRes.value.data?.success) {
@@ -100,7 +97,10 @@ const UserDashboard = () => {
     if (facultyId) {
       const filtered = departments.filter((d) => Number(d.facultyId) === Number(facultyId));
       setFilteredDepts(filtered);
-      setDepartmentId(filtered.length > 0 ? String(filtered[0].id) : '');
+      setDepartmentId((prev) => {
+        const exists = filtered.some((d) => String(d.id) === String(prev));
+        return exists ? prev : '';
+      });
     } else {
       setFilteredDepts([]);
       setDepartmentId('');
@@ -329,8 +329,12 @@ const UserDashboard = () => {
                     value={facultyId}
                     onChange={(e) => setFacultyId(e.target.value)}
                     required
-                    className="w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground cursor-pointer"
+                    disabled={faculties.length === 0}
+                    className="w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
+                    <option value="">
+                      {faculties.length === 0 ? 'No faculties available' : 'Select Faculty...'}
+                    </option>
                     {faculties.map((f) => (
                       <option key={f.id} value={f.id}>
                         {f.name}
@@ -344,9 +348,16 @@ const UserDashboard = () => {
                   <select
                     value={departmentId}
                     onChange={(e) => setDepartmentId(e.target.value)}
-                    className="w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground cursor-pointer"
+                    disabled={!facultyId || filteredDepts.length === 0}
+                    className="w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <option value="">Select Department...</option>
+                    <option value="">
+                      {!facultyId
+                        ? 'Select Faculty First'
+                        : filteredDepts.length === 0
+                        ? 'No Departments in this Faculty'
+                        : 'Select Department (Optional)...'}
+                    </option>
                     {filteredDepts.map((d) => (
                       <option key={d.id} value={d.id}>
                         {d.name}

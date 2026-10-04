@@ -364,7 +364,7 @@ const StudentDashboard = () => {
               <Building className="h-4 w-4 text-primary" />
               <span>University Academic Information</span>
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-muted-foreground pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 text-muted-foreground pt-1">
               <div>
                 <span className="block text-[10px]">Student ID:</span>
                 <span className="font-semibold text-foreground">{profile?.universityId || 'N/A'}</span>
@@ -372,6 +372,14 @@ const StudentDashboard = () => {
               <div>
                 <span className="block text-[10px]">Reg No:</span>
                 <span className="font-semibold text-foreground">{profile?.registrationNumber || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px]">Faculty:</span>
+                <span className="font-semibold text-foreground">{profile?.facultyName || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px]">Department:</span>
+                <span className="font-semibold text-foreground">{profile?.departmentName || 'N/A'}</span>
               </div>
               <div>
                 <span className="block text-[10px]">Session:</span>

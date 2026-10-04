@@ -43,9 +43,18 @@ const createAlumniProfile = (data, callback) => {
 // Get Student Profile By User Id
 const getStudentProfileByUserId = (userId, callback) => {
   const sql = `
-    SELECT *
+    SELECT
+      student_profiles.*,
+      users.name,
+      users.email,
+      users.profileImageUrl,
+      faculties.name AS facultyName,
+      departments.name AS departmentName
     FROM student_profiles
-    WHERE userId = ?
+    INNER JOIN users ON student_profiles.userId = users.id
+    LEFT JOIN faculties ON student_profiles.facultyId = faculties.id
+    LEFT JOIN departments ON student_profiles.departmentId = departments.id
+    WHERE student_profiles.userId = ?
   `;
 
   db.query(sql, [userId], callback);
@@ -54,9 +63,18 @@ const getStudentProfileByUserId = (userId, callback) => {
 // Get Alumni Profile By User Id
 const getAlumniProfileByUserId = (userId, callback) => {
   const sql = `
-    SELECT *
+    SELECT
+      alumni_profiles.*,
+      users.name,
+      users.email,
+      users.profileImageUrl,
+      faculties.name AS facultyName,
+      departments.name AS departmentName
     FROM alumni_profiles
-    WHERE userId = ?
+    INNER JOIN users ON alumni_profiles.userId = users.id
+    LEFT JOIN faculties ON alumni_profiles.facultyId = faculties.id
+    LEFT JOIN departments ON alumni_profiles.departmentId = departments.id
+    WHERE alumni_profiles.userId = ?
   `;
 
   db.query(sql, [userId], callback);

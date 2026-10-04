@@ -170,6 +170,15 @@ const me = (req, res) => {
 
     const user = result[0];
 
+    // Refresh accessToken cookie if role changed
+    const freshAccessToken = generateAccessToken(user);
+    res.cookie('accessToken', freshAccessToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000,
+    });
+
     const sendResponse = (canCreateEvent) => {
       return res.status(200).json({
         success: true,

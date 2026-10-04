@@ -34,6 +34,7 @@ import {
   Check,
   FolderGit2,
   CreditCard,
+  Building,
 } from 'lucide-react';
 import { FaLinkedin, FaGithub, FaFacebook } from 'react-icons/fa6';
 import { toast } from 'react-toastify';
@@ -472,6 +473,40 @@ const AlumniDashboard = () => {
       {/* Tab 1: Profile & Contact Privacy */}
       {activeTab === 'profile' && (
         <form onSubmit={handleSaveProfile} className="space-y-6 max-w-3xl">
+          {/* Academic Info Banner */}
+          <Card className="border border-border bg-muted/20 p-4 rounded-xl text-xs space-y-2">
+            <h4 className="font-bold text-foreground flex items-center gap-1.5">
+              <Building className="h-4 w-4 text-primary" />
+              <span>University Academic Information</span>
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 text-muted-foreground pt-1">
+              <div>
+                <span className="block text-[10px]">Student ID:</span>
+                <span className="font-semibold text-foreground">{profile?.universityId || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px]">Reg No:</span>
+                <span className="font-semibold text-foreground">{profile?.registrationNumber || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px]">Faculty:</span>
+                <span className="font-semibold text-foreground">{profile?.facultyName || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px]">Department:</span>
+                <span className="font-semibold text-foreground">{profile?.departmentName || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px]">Session:</span>
+                <span className="font-semibold text-foreground">{profile?.session || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px]">Graduation:</span>
+                <span className="font-semibold text-foreground">{profile?.graduationYear || 'N/A'}</span>
+              </div>
+            </div>
+          </Card>
+
           <Card className="border border-border bg-card p-5 sm:p-6 rounded-2xl shadow-2xs space-y-4.5">
             <div className="border-b border-border pb-3">
               <h4 className="font-bold text-sm text-foreground">Professional & Bio Details</h4>

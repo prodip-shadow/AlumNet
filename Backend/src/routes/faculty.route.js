@@ -16,15 +16,11 @@ router.post(
 
 router.get(
   '/',
-  verifyToken,
-  allowRoles('ADMIN'),
   facultyController.getAllFaculties,
 );
 
 router.get(
   '/:id',
-  verifyToken,
-  allowRoles('ADMIN'),
   facultyController.getFacultyById,
 );
 
