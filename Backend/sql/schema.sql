@@ -487,7 +487,9 @@ CREATE TABLE opportunity_applications (
 
     cvUrl VARCHAR(500) DEFAULT NULL,
 
-    status ENUM('APPLIED', 'SHORTLISTED', 'SELECTED', 'REJECTED') DEFAULT 'APPLIED',
+    portfolioUrl VARCHAR(500) DEFAULT NULL,
+
+    status ENUM('APPLIED', 'SHORTLISTED', 'SELECTED', 'REJECTED', 'ACCEPTED') DEFAULT 'APPLIED',
 
     message TEXT DEFAULT NULL,
 
@@ -729,3 +731,11 @@ CREATE TABLE alumni_migration_applications (
 
 CREATE INDEX idx_ama_userId ON alumni_migration_applications(userId);
 CREATE INDEX idx_ama_status ON alumni_migration_applications(status);
+
+-- ===================================================
+-- SCHEMA MIGRATIONS / ALTER QUERIES
+-- ===================================================
+
+-- Opportunity Applications Updates (ACCEPTED status & portfolioUrl)
+ALTER TABLE opportunity_applications MODIFY COLUMN status ENUM('APPLIED', 'SHORTLISTED', 'SELECTED', 'REJECTED', 'ACCEPTED') DEFAULT 'APPLIED';
+ALTER TABLE opportunity_applications ADD COLUMN portfolioUrl VARCHAR(500) DEFAULT NULL AFTER cvUrl;

@@ -151,6 +151,28 @@ const getMyProfile = (req, res) => {
     return;
   }
 
+  if (user.role === 'ADMIN' || user.role === 'USER') {
+    userModel.getUserById(user.id, (err, userResult) => {
+      if (err || !userResult || userResult.length === 0) {
+        return res.status(500).json({ success: false, message: 'Server Error' });
+      }
+      const u = userResult[0];
+      return res.status(200).json({
+        success: true,
+        profile: {
+          id: u.id,
+          userId: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          profileImageUrl: u.profileImageUrl,
+        },
+        skills: [],
+      });
+    });
+    return;
+  }
+
   return res.status(403).json({
     success: false,
     message: 'Profile is not available for this user',
@@ -307,6 +329,16 @@ const updateMyProfile = (req, res) => {
     return;
   }
 
+  if (user.role === 'ADMIN' || user.role === 'USER') {
+    handleNameUpdateThenProceed(() => {
+      return res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully',
+      });
+    });
+    return;
+  }
+
   return res.status(403).json({
     success: false,
     message: 'Profile is not available for this user',
@@ -343,6 +375,7 @@ const updateProfilePicture = (req, res) => {
       return res.status(200).json({
         success: true,
         message: 'Profile picture updated successfully',
+        profileImageUrl: req.uploadedImageUrl,
       });
     },
   );

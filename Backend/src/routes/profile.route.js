@@ -11,22 +11,21 @@ const { uploadSingleImage } = require('../middlewares/upload.middleware');
 router.get(
   '/me',
   verifyToken,
-  allowRoles('STUDENT', 'ALUMNI'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   profileController.getMyProfile,
 );
 
 router.put(
   '/me',
   verifyToken,
-  allowRoles('STUDENT', 'ALUMNI'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   profileController.updateMyProfile,
 );
-
 
 router.put(
   '/picture',
   verifyToken,
-  allowRoles('STUDENT', 'ALUMNI'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   ...uploadSingleImage('profileImage'),
   profileController.updateProfilePicture,
 );

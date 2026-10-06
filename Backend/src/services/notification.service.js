@@ -70,7 +70,7 @@ const createNotification = (notificationData, io, callback) => {
 
         // Emit real-time notification to recipient via Socket.io if online
         try {
-          emitToUser(io, userId, 'new-notification', notificationPayload);
+          emitToUser(io, userId, 'new_notification', notificationPayload);
         } catch (socketErr) {
           console.error('Socket emit error:', socketErr.message);
         }
@@ -129,7 +129,7 @@ const createBulkNotifications = (targetUserIds, actorUserId, type, entityType, r
             isRead: false,
             createdAt: now,
           };
-          emitToUser(io, uId, 'new-notification', payload);
+          emitToUser(io, uId, 'new_notification', payload);
         });
       } catch (socketErr) {
         console.error('Bulk socket emit error:', socketErr.message);

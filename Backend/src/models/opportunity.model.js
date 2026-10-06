@@ -131,10 +131,11 @@ const applyOpportunity = (data, callback) => {
       opportunityId,
       studentId,
       cvUrl,
-      status,
-      message
+      portfolioUrl,
+      message,
+      status
     )
-    VALUES (?, ?, ?, 'APPLIED', NULL)
+    VALUES (?, ?, ?, ?, ?, 'APPLIED')
   `;
 
   db.query(sql, data, callback);
@@ -147,6 +148,7 @@ const getMyApplications = (studentId, callback) => {
       opportunity_applications.id AS applicationId,
       opportunity_applications.opportunityId,
       opportunity_applications.cvUrl,
+      opportunity_applications.portfolioUrl,
       opportunity_applications.status,
       opportunity_applications.message,
       opportunity_applications.createdAt AS appliedDate,
@@ -179,10 +181,12 @@ const getOpportunityApplicants = (opportunityId, statusFilter, callback) => {
       opportunity_applications.opportunityId,
       opportunity_applications.studentId,
       opportunity_applications.cvUrl,
+      opportunity_applications.portfolioUrl,
       opportunity_applications.status,
       opportunity_applications.message,
       opportunity_applications.createdAt AS appliedAt,
       users.name,
+      users.email,
       users.profileImageUrl,
       student_profiles.currentSemester,
       departments.name AS departmentName,
@@ -236,6 +240,16 @@ const updateApplicationStatus = (applicationId, status, message, callback) => {
   db.query(sql, [status, message, applicationId], callback);
 };
 
+// Delete Application (On Rejection)
+const deleteApplication = (applicationId, callback) => {
+  const sql = `
+    DELETE FROM opportunity_applications
+    WHERE id = ?
+  `;
+
+  db.query(sql, [applicationId], callback);
+};
+
 module.exports = {
   createOpportunity,
   getAllOpportunities,
@@ -250,4 +264,5 @@ module.exports = {
   getOpportunityApplicants,
   getApplicationById,
   updateApplicationStatus,
+  deleteApplication,
 };

@@ -213,11 +213,27 @@ const Home = () => {
 
           {/* Database Posts Feed List */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-14 space-y-3 bg-card border border-border rounded-xl shadow-xs">
-              <Loader2 className="h-7 w-7 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground font-medium">
-                Fetching posts from database...
-              </p>
+            <div className="space-y-5">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <div key={idx} className="p-5 border border-border bg-card rounded-2xl shadow-2xs space-y-4 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-muted shrink-0 border border-border" />
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="h-4 w-32 bg-muted rounded" />
+                      <div className="h-3 w-20 bg-muted rounded" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-full bg-muted rounded" />
+                    <div className="h-4 w-3/4 bg-muted rounded" />
+                  </div>
+                  <div className="h-44 w-full bg-muted rounded-xl" />
+                  <div className="flex items-center justify-between pt-2 border-t border-border">
+                    <div className="h-8 w-20 bg-muted rounded-lg" />
+                    <div className="h-8 w-20 bg-muted rounded-lg" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-10 px-4 text-center bg-card border border-destructive/20 rounded-xl space-y-2">

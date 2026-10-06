@@ -35,12 +35,15 @@ import {
   FolderGit2,
   CreditCard,
   Building,
+  Download,
 } from 'lucide-react';
 import { FaLinkedin, FaGithub, FaFacebook } from 'react-icons/fa6';
 import { toast } from 'react-toastify';
+import { confirmAlert, themeSwal } from '@/lib/swal';
 import ProjectsSection from '@/components/shared/ProjectsSection';
 import MyCreatedEventsSection from '@/components/shared/MyCreatedEventsSection';
 import PaymentHistorySection from '@/components/shared/PaymentHistorySection';
+import Link from 'next/link';
 
 const AlumniDashboard = () => {
   const { user, setUser } = useAuth();
@@ -275,6 +278,30 @@ const AlumniDashboard = () => {
     }
   };
 
+  const handleDownloadCv = async (cvUrl, studentName = 'applicant') => {
+    if (!cvUrl) return;
+    try {
+      const response = await fetch(cvUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `CV-${(studentName || 'applicant').replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download failed, using fallback anchor:', err);
+      const a = document.createElement('a');
+      a.href = cvUrl;
+      a.download = `CV-${studentName}.pdf`;
+      a.target = '_blank';
+      a.click();
+    }
+  };
+
   // Handle Create Opportunity
   const handleCreateOpportunity = async (e) => {
     e.preventDefault();
@@ -318,28 +345,68 @@ const AlumniDashboard = () => {
     setViewingOppId(oppId);
     setLoadingApplicants(true);
     try {
-      const res = await api.get(`/api/opportunities/${oppId}/applications`);
-      if (res.data?.success && Array.isArray(res.data.applications)) {
-        setApplicants(res.data.applications);
+      const res = await api.get(`/api/opportunities/${oppId}/applicants`);
+      if (res.data?.success) {
+        const list = res.data.applicants || res.data.applications || [];
+        setApplicants(list);
       }
     } catch (err) {
-      showFeedback('error', 'Could not load applicants');
+      showFeedback('error', err.response?.data?.message || 'Could not load applicants');
     } finally {
       setLoadingApplicants(false);
     }
   };
 
   // Handle Review Applicant Status
-  const handleUpdateApplicantStatus = async (appId, status) => {
+  const handleUpdateApplicantStatus = async (appId, status, message = '') => {
     try {
-      const res = await api.patch(`/api/opportunities/applications/${appId}/status`, { status });
+      const res = await api.patch(`/api/opportunities/applications/${appId}/status`, { status, message });
       if (res.data?.success) {
-        showFeedback('success', `Applicant status updated to ${status}`);
+        toast.success(res.data.message || `Applicant status updated to ${status}`);
         if (viewingOppId) handleViewApplicants(viewingOppId);
       }
     } catch (err) {
-      showFeedback('error', err.response?.data?.message || 'Failed to update applicant status');
+      toast.error(err.response?.data?.message || 'Failed to update applicant status');
     }
+  };
+
+  const handleAcceptApplicant = async (appId) => {
+    const { value: note, isConfirmed } = await themeSwal.fire({
+      title: 'Accept Application',
+      input: 'textarea',
+      inputLabel: 'Add a note/message for the student (optional):',
+      inputPlaceholder: 'e.g. Congratulations! We would like to invite you for an interview...',
+      showCancelButton: true,
+      confirmButtonText: 'Accept Application',
+      cancelButtonText: 'Cancel',
+      customClass: {
+        popup: 'bg-card border border-border text-foreground rounded-2xl shadow-xl p-6 font-sans',
+        title: 'text-base font-extrabold text-foreground mb-1',
+        input: 'bg-background border border-border text-foreground text-xs rounded-xl p-3 focus:ring-1 focus:ring-primary',
+        confirmButton: 'bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors shadow-2xs mx-1',
+        cancelButton: 'bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors border border-border mx-1',
+        actions: 'flex items-center justify-end gap-2 mt-4',
+      },
+      buttonsStyling: false,
+    });
+
+    if (!isConfirmed) return;
+
+    await handleUpdateApplicantStatus(appId, 'ACCEPTED', note || '');
+  };
+
+  const handleRejectApplicant = async (appId) => {
+    const confirmed = await confirmAlert({
+      title: 'Reject Application?',
+      text: 'Are you sure you want to reject and delete this application?',
+      confirmButtonText: 'Yes, Reject & Delete',
+      cancelButtonText: 'Cancel',
+      confirmButtonVariant: 'destructive',
+    });
+
+    if (!confirmed) return;
+
+    await handleUpdateApplicantStatus(appId, 'REJECTED');
   };
 
   // Handle Create Event
@@ -963,6 +1030,11 @@ const AlumniDashboard = () => {
                   <option value="CONTRACT">Contract</option>
                   <option value="FREELANCE">Freelance</option>
                   <option value="RESEARCH">Research</option>
+                  <option value="JOB">Job Opening</option>
+                  <option value="SCHOLARSHIP">Scholarship</option>
+                  <option value="TRAINING">Training</option>
+                  <option value="WORKSHOP">Workshop</option>
+                  <option value="OTHER">Other</option>
                 </select>
               </div>
 
@@ -1020,8 +1092,8 @@ const AlumniDashboard = () => {
               <div className="p-8 text-center text-xs text-muted-foreground">No applicants have applied yet.</div>
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto divide-y divide-border/60">
-                {applicants.map((app) => (
-                  <div key={app.id} className="pt-3 first:pt-0 space-y-2 text-xs">
+                {applicants.map((app, idx) => (
+                  <div key={app.id || app.applicationId || `applicant-${idx}`} className="pt-3 first:pt-0 space-y-2 text-xs">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <h4 className="font-bold text-foreground">{app.userName || `User #${app.userId}`}</h4>
@@ -1047,35 +1119,56 @@ const AlumniDashboard = () => {
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between gap-2 pt-1">
-                      {app.cvUrl ? (
-                        <a
-                          href={app.cvUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline font-semibold flex items-center gap-1"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          <span>View Submitted CV</span>
-                          <ExternalLink className="h-2.5 w-2.5" />
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground text-[11px]">No CV Attached</span>
-                      )}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {app.cvUrl ? (
+                          <a
+                            href={app.cvUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary font-bold flex items-center gap-1 text-[11px] bg-primary/10 px-2 py-0.5 rounded border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
+                          >
+                            <Eye className="h-3 w-3" />
+                            <span>View CV</span>
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px] italic">No CV attached</span>
+                        )}
 
-                      <div className="flex gap-1.5">
-                        <Button
-                          size="sm"
-                          onClick={() => handleUpdateApplicantStatus(app.id, 'ACCEPTED')}
-                          className="h-7 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white"
-                        >
-                          Accept
-                        </Button>
+                        {app.portfolioUrl && (
+                          <a
+                            href={app.portfolioUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1 text-[11px] bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors cursor-pointer"
+                          >
+                            <Globe className="h-3 w-3" />
+                            <span>View Portfolio</span>
+                          </a>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <Link href={`/profile/${app.studentId || app.userId}`} target="_blank">
+                          <Button size="sm" variant="outline" className="h-7 text-[11px] font-semibold gap-1 cursor-pointer">
+                            <User className="h-3 w-3 text-primary" />
+                            <span>View Profile</span>
+                          </Button>
+                        </Link>
+                        {app.status !== 'ACCEPTED' && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleAcceptApplicant(app.id)}
+                            className="h-7 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                          >
+                            Accept
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleUpdateApplicantStatus(app.id, 'REJECTED')}
-                          className="h-7 text-[11px]"
+                          onClick={() => handleRejectApplicant(app.id)}
+                          className="h-7 text-[11px] cursor-pointer"
                         >
                           Reject
                         </Button>

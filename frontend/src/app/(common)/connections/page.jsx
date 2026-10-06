@@ -29,7 +29,7 @@ import { confirmAlert } from '@/lib/swal';
 
 const ConnectionsPage = () => {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isStudent = user?.role === 'STUDENT';
   const [activeTab, setActiveTab] = useState('connections'); // connections, incoming, outgoing
 
@@ -174,6 +174,44 @@ const ConnectionsPage = () => {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="px-4 md:px-6 py-6 max-w-5xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+          <div className="space-y-2">
+            <div className="h-7 w-64 bg-muted animate-pulse rounded" />
+            <div className="h-4 w-96 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="h-9 w-32 bg-muted animate-pulse rounded-lg" />
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-32 bg-muted animate-pulse rounded-lg" />
+            <div className="h-9 w-28 bg-muted animate-pulse rounded-lg" />
+            <div className="h-9 w-24 bg-muted animate-pulse rounded-lg" />
+          </div>
+          <div className="h-9 w-64 bg-muted animate-pulse rounded-lg" />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <Card key={idx} className="border border-border bg-card p-4 rounded-xl shadow-2xs flex items-center justify-between gap-3 animate-pulse">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="h-12 w-12 rounded-full bg-muted shrink-0 border border-border" />
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <div className="h-4 w-32 bg-muted rounded" />
+                  <div className="h-3 w-40 bg-muted rounded" />
+                </div>
+              </div>
+              <div className="h-8 w-16 bg-muted rounded shrink-0" />
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center space-y-4">
@@ -276,7 +314,20 @@ const ConnectionsPage = () => {
       {activeTab === 'connections' && (
         <div className="space-y-4">
           {loading ? (
-            <div className="p-12 text-center text-xs text-muted-foreground">Loading connections...</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <Card key={idx} className="border border-border bg-card p-4 rounded-xl shadow-2xs flex items-center justify-between gap-3 animate-pulse">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="h-12 w-12 rounded-full bg-muted shrink-0 border border-border" />
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="h-4 w-32 bg-muted rounded" />
+                      <div className="h-3 w-40 bg-muted rounded" />
+                    </div>
+                  </div>
+                  <div className="h-8 w-16 bg-muted rounded shrink-0" />
+                </Card>
+              ))}
+            </div>
           ) : filteredConnections.length === 0 ? (
             <Card className="p-12 text-center text-xs text-muted-foreground border-dashed">
               <Users className="h-8 w-8 mx-auto opacity-40 mb-2 text-primary" />
@@ -346,7 +397,23 @@ const ConnectionsPage = () => {
       {activeTab === 'incoming' && (
         <div className="space-y-4">
           {loading ? (
-            <div className="p-12 text-center text-xs text-muted-foreground">Loading received requests...</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <Card key={idx} className="border border-border bg-card p-4 rounded-xl shadow-2xs space-y-3 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-muted shrink-0 border border-border" />
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="h-4 w-32 bg-muted rounded" />
+                      <div className="h-3 w-24 bg-muted rounded" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-2 border-t border-border">
+                    <div className="h-8 flex-1 bg-muted rounded" />
+                    <div className="h-8 flex-1 bg-muted rounded" />
+                  </div>
+                </Card>
+              ))}
+            </div>
           ) : incoming.length === 0 ? (
             <Card className="p-12 text-center text-xs text-muted-foreground border-dashed">
               <UserCheck className="h-8 w-8 mx-auto opacity-40 mb-2 text-primary" />
@@ -423,7 +490,20 @@ const ConnectionsPage = () => {
       {activeTab === 'outgoing' && (
         <div className="space-y-4">
           {loading ? (
-            <div className="p-12 text-center text-xs text-muted-foreground">Loading sent requests...</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <Card key={idx} className="border border-border bg-card p-4 rounded-xl shadow-2xs flex items-center justify-between gap-3 animate-pulse">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="h-10 w-10 rounded-full bg-muted shrink-0 border border-border" />
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="h-4 w-28 bg-muted rounded" />
+                      <div className="h-3 w-20 bg-muted rounded" />
+                    </div>
+                  </div>
+                  <div className="h-8 w-14 bg-muted rounded shrink-0" />
+                </Card>
+              ))}
+            </div>
           ) : outgoing.length === 0 ? (
             <Card className="p-12 text-center text-xs text-muted-foreground border-dashed">
               <Clock className="h-8 w-8 mx-auto opacity-40 mb-2 text-primary" />

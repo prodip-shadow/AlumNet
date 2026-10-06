@@ -32,7 +32,7 @@ import { FaLinkedin, FaGithub } from 'react-icons/fa6';
 import { toast } from 'react-toastify';
 
 export default function ProfilePage() {
-  const { user, setUser } = useAuth();
+  const { user, setUser, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
   const [skills, setSkills] = useState([]);
   const [allSkills, setAllSkills] = useState([]);
@@ -167,6 +167,54 @@ export default function ProfilePage() {
       setSaving(false);
     }
   };
+
+  if (loading || authLoading) {
+    return (
+      <div className="px-4 md:px-6 py-6 max-w-4xl mx-auto space-y-6">
+        <Card className="border border-border bg-card p-6 rounded-2xl shadow-2xs">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+            <div className="h-24 w-24 rounded-full bg-muted animate-pulse shrink-0 border border-border" />
+            <div className="flex-1 space-y-3 w-full text-center sm:text-left">
+              <div className="h-6 w-48 bg-muted animate-pulse rounded mx-auto sm:mx-0" />
+              <div className="h-4 w-64 bg-muted animate-pulse rounded mx-auto sm:mx-0" />
+              <div className="h-4 w-40 bg-muted animate-pulse rounded mx-auto sm:mx-0" />
+            </div>
+          </div>
+        </Card>
+
+        <div className="space-y-6">
+          <Card className="border border-border bg-card p-6 rounded-2xl shadow-2xs space-y-4">
+            <div className="h-5 w-40 bg-muted animate-pulse rounded" />
+            <div className="space-y-3">
+              <div className="h-9 w-full bg-muted animate-pulse rounded-xl" />
+              <div className="h-20 w-full bg-muted animate-pulse rounded-xl" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="h-9 w-full bg-muted animate-pulse rounded-xl" />
+                <div className="h-9 w-full bg-muted animate-pulse rounded-xl" />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="border border-border bg-card p-6 rounded-2xl shadow-2xs space-y-4">
+            <div className="h-5 w-44 bg-muted animate-pulse rounded" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="h-9 w-full bg-muted animate-pulse rounded-xl" />
+              <div className="h-9 w-full bg-muted animate-pulse rounded-xl" />
+            </div>
+          </Card>
+
+          <Card className="border border-border bg-card p-6 rounded-2xl shadow-2xs space-y-4">
+            <div className="h-5 w-36 bg-muted animate-pulse rounded" />
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-7 w-20 bg-muted animate-pulse rounded-full" />
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

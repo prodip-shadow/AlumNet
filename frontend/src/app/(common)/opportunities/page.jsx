@@ -27,9 +27,14 @@ import {
   Upload,
   CheckCircle2,
   XCircle,
+  User,
+  Check,
+  Download,
+  Eye,
+  Globe,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { confirmAlert } from '@/lib/swal';
+import { confirmAlert, themeSwal } from '@/lib/swal';
 import Link from 'next/link';
 
 const OpportunityTypes = [
@@ -40,6 +45,10 @@ const OpportunityTypes = [
   { id: 'CONTRACT', label: 'Contract' },
   { id: 'FREELANCE', label: 'Freelance' },
   { id: 'RESEARCH', label: 'Research' },
+  { id: 'JOB', label: 'Job Opening' },
+  { id: 'SCHOLARSHIP', label: 'Scholarship' },
+  { id: 'TRAINING', label: 'Training / Workshop' },
+  { id: 'OTHER', label: 'Other' },
 ];
 
 const OpportunityPage = () => {
@@ -54,7 +63,7 @@ const OpportunityPage = () => {
   const [selectedOpp, setSelectedOpp] = useState(null);
   const [applyMessage, setApplyMessage] = useState('');
   const [applyCvUrl, setApplyCvUrl] = useState('');
-  const [cvFile, setCvFile] = useState(null);
+  const [applyPortfolioUrl, setApplyPortfolioUrl] = useState('');
   const [applying, setApplying] = useState(false);
 
   // Post / Edit Opportunity Modal (Alumni/Admin)
@@ -70,6 +79,10 @@ const OpportunityPage = () => {
   const [viewingApplicantsOpp, setViewingApplicantsOpp] = useState(null);
   const [applicantsList, setApplicantsList] = useState([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
+
+  // Student Applications State
+  const [myApplications, setMyApplications] = useState([]);
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'my-applications'
 
   const showFeedback = (type, msg) => {
     if (type === 'success') toast.success(msg, { autoClose: 1500 });
@@ -99,28 +112,46 @@ const OpportunityPage = () => {
     }
   }, [selectedType, page]);
 
+  const fetchMyApplications = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.get('/api/opportunities/my-applications');
+      if (res.data?.success && Array.isArray(res.data.applications)) {
+        setMyApplications(res.data.applications);
+      }
+    } catch (err) {
+      console.warn('Could not load my applications:', err);
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchOpportunities();
-  }, [fetchOpportunities]);
+    if (user) {
+      fetchMyApplications();
+    }
+  }, [fetchOpportunities, fetchMyApplications, user]);
 
-  // Handle Apply (Supports PDF CV File Upload via FormData or URL link)
+  const appliedOppMap = new Map();
+  myApplications.forEach((app) => {
+    const oppId = app.opportunityId || app.opportunity?.id || app.id;
+    if (oppId) appliedOppMap.set(Number(oppId), app);
+  });
+
+  // Handle Apply (Submits CV / Resume Drive link, Portfolio link and cover message)
   const handleApply = async (e) => {
     e.preventDefault();
     if (!selectedOpp) return;
-    if (selectedOpp.isCvRequired && !cvFile && !applyCvUrl.trim()) {
-      showFeedback('error', 'A PDF CV upload or CV link is mandatory for this opportunity');
+    if (selectedOpp.isCvRequired && !applyCvUrl.trim()) {
+      showFeedback('error', 'A CV / Resume link (Google Drive / Dropbox) is mandatory for this opportunity');
       return;
     }
 
     setApplying(true);
     try {
-      const formData = new FormData();
-      if (applyMessage.trim()) formData.append('message', applyMessage.trim());
-      if (applyCvUrl.trim()) formData.append('cvUrl', applyCvUrl.trim());
-      if (cvFile) formData.append('cv', cvFile);
-
-      const res = await api.post(`/api/opportunities/${selectedOpp.id}/apply`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const res = await api.post(`/api/opportunities/${selectedOpp.id}/apply`, {
+        message: applyMessage.trim() || null,
+        cvUrl: applyCvUrl.trim() || null,
+        portfolioUrl: applyPortfolioUrl.trim() || null,
       });
 
       if (res.data?.success) {
@@ -128,8 +159,9 @@ const OpportunityPage = () => {
         setSelectedOpp(null);
         setApplyMessage('');
         setApplyCvUrl('');
-        setCvFile(null);
+        setApplyPortfolioUrl('');
         fetchOpportunities();
+        fetchMyApplications();
       }
     } catch (err) {
       showFeedback('error', err.response?.data?.message || 'Failed to submit application');
@@ -249,15 +281,87 @@ const OpportunityPage = () => {
   };
 
   // Handle Review Applicant Status
-  const handleUpdateApplicantStatus = async (applicationId, status) => {
+  const handleUpdateApplicantStatus = async (applicationId, status, message = '') => {
     try {
-      const res = await api.patch(`/api/opportunities/applications/${applicationId}/status`, { status });
+      const res = await api.patch(`/api/opportunities/applications/${applicationId}/status`, { status, message });
       if (res.data?.success) {
-        showFeedback('success', `Applicant status updated to ${status}`);
+        showFeedback('success', res.data.message || `Applicant status updated to ${status}`);
         if (viewingApplicantsOpp) handleViewApplicants(viewingApplicantsOpp);
       }
     } catch (err) {
       showFeedback('error', err.response?.data?.message || 'Failed to update applicant status');
+    }
+  };
+
+  const handleAcceptApplicant = async (appId) => {
+    const { value: note, isConfirmed } = await themeSwal.fire({
+      title: 'Accept Application',
+      input: 'textarea',
+      inputLabel: 'Add a note/message for the student (optional):',
+      inputPlaceholder: 'e.g. Congratulations! We would like to invite you for an interview...',
+      showCancelButton: true,
+      confirmButtonText: 'Accept Application',
+      cancelButtonText: 'Cancel',
+      customClass: {
+        popup: 'bg-card border border-border text-foreground rounded-2xl shadow-xl p-6 font-sans',
+        title: 'text-base font-extrabold text-foreground mb-1',
+        input: 'bg-background border border-border text-foreground text-xs rounded-xl p-3 focus:ring-1 focus:ring-primary',
+        confirmButton: 'bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors shadow-2xs mx-1',
+        cancelButton: 'bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors border border-border mx-1',
+        actions: 'flex items-center justify-end gap-2 mt-4',
+      },
+      buttonsStyling: false,
+    });
+
+    if (!isConfirmed) return;
+
+    await handleUpdateApplicantStatus(appId, 'ACCEPTED', note || '');
+  };
+
+  const handleRejectApplicant = async (appId) => {
+    const confirmed = await confirmAlert({
+      title: 'Reject Application?',
+      text: 'Are you sure you want to reject and delete this application record?',
+      confirmButtonText: 'Yes, Reject & Delete',
+      cancelButtonText: 'Cancel',
+      confirmButtonVariant: 'destructive',
+    });
+
+    if (!confirmed) return;
+
+    await handleUpdateApplicantStatus(appId, 'REJECTED');
+  };
+
+  const handleViewNote = (app) => {
+    themeSwal.fire({
+      title: 'Alumni Creator Note',
+      text: app.message || 'Congratulations! Your application has been accepted.',
+      icon: 'info',
+      confirmButtonText: 'Close',
+    });
+  };
+
+  const handleDownloadCv = async (cvUrl, studentName = 'applicant') => {
+    if (!cvUrl) return;
+    try {
+      const response = await fetch(cvUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `CV-${(studentName || 'applicant').replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download failed, using fallback anchor:', err);
+      const a = document.createElement('a');
+      a.href = cvUrl;
+      a.download = `CV-${studentName}.pdf`;
+      a.target = '_blank';
+      a.click();
     }
   };
 
@@ -306,42 +410,142 @@ const OpportunityPage = () => {
 
       {/* Search & Type Filter Tabs */}
       <div className="space-y-3">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search opportunities, keywords, or authors..."
-            className="pl-9 h-9 text-xs"
-          />
-        </div>
+        {/* Main Tab Switcher: All Opportunities vs My Applications */}
+        {user && (
+          <div className="flex items-center gap-2 border-b border-border pb-2">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
+                activeTab === 'all'
+                  ? 'bg-primary text-primary-foreground shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              All Opportunities
+            </button>
+            <button
+              onClick={() => setActiveTab('my-applications')}
+              className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'my-applications'
+                  ? 'bg-primary text-primary-foreground shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              <span>My Applications</span>
+              {myApplications.length > 0 && (
+                <span className="text-[10px] px-1.5 py-0.2 bg-primary-foreground/20 rounded-full font-extrabold">
+                  {myApplications.length}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
 
-        {/* Type Filter Buttons */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {OpportunityTypes.map((t) => {
-            const isSelected = selectedType === t.id;
-            return (
-              <Button
-                key={t.id}
-                variant={isSelected ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => {
-                  setSelectedType(t.id);
-                  setPage(1);
-                }}
-                className={`h-8 px-3 text-xs font-semibold cursor-pointer shrink-0 rounded-lg ${
-                  isSelected ? 'shadow-2xs' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t.label}
-              </Button>
-            );
-          })}
-        </div>
+        {activeTab === 'all' && (
+          <>
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search opportunities, keywords, or authors..."
+                className="pl-9 h-9 text-xs"
+              />
+            </div>
+
+            {/* Type Filter Buttons */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {OpportunityTypes.map((t) => {
+                const isSelected = selectedType === t.id;
+                return (
+                  <Button
+                    key={t.id}
+                    variant={isSelected ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setSelectedType(t.id);
+                      setPage(1);
+                    }}
+                    className={`h-8 px-3 text-xs font-semibold cursor-pointer shrink-0 rounded-lg ${
+                      isSelected ? 'shadow-2xs' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {t.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Opportunities List */}
-      {loading ? (
+      {/* Main Content Area */}
+      {activeTab === 'my-applications' ? (
+        myApplications.length === 0 ? (
+          <Card className="p-12 text-center text-xs text-muted-foreground border-dashed rounded-2xl">
+            <FileText className="h-8 w-8 mx-auto opacity-40 mb-2 text-primary" />
+            <p className="font-semibold text-foreground text-sm">No applications submitted yet</p>
+            <p className="mt-1">Explore job openings under 'All Opportunities' and click Apply Now.</p>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {myApplications.map((app, idx) => {
+              const statusUpper = (app.status || 'PENDING').toUpperCase();
+              const isAccepted = statusUpper === 'ACCEPTED';
+              const isRejected = statusUpper === 'REJECTED';
+              const itemKey = app.applicationId || app.id || app.opportunityId || `my-app-${idx}`;
+              const oppType = app.opportunity?.type || app.type;
+              return (
+                <Card key={itemKey} className="border border-border bg-card p-5 rounded-2xl shadow-2xs space-y-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-sm text-foreground">
+                          {oppType ? oppType.replace('_', ' ') : 'Opportunity Application'}
+                        </h3>
+                        <Badge
+                          variant="secondary"
+                          className={`text-[10px] font-bold ${
+                            isAccepted
+                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20'
+                              : isRejected
+                              ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                              : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20'
+                          }`}
+                        >
+                          {isAccepted ? 'Accepted' : isRejected ? 'Rejected' : 'Pending'}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Applied on {new Date(app.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+
+                    {isAccepted && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewNote(app)}
+                        className="h-8 text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer shadow-2xs"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        <span>View Note</span>
+                      </Button>
+                    )}
+                  </div>
+
+                  {app.content && (
+                    <p className="text-xs text-foreground/95 leading-relaxed bg-muted/20 p-3.5 rounded-xl border border-border/50">
+                      {app.content}
+                    </p>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )
+      ) : loading ? (
         <div className="space-y-3.5">
           {Array.from({ length: 4 }).map((_, idx) => (
             <Card key={idx} className="p-5 border border-border bg-card rounded-xl shadow-2xs space-y-3 animate-pulse">
@@ -357,15 +561,15 @@ const OpportunityPage = () => {
           ))}
         </div>
       ) : filteredOpps.length === 0 ? (
-        <Card className="p-12 text-center text-xs text-muted-foreground border-dashed">
+        <Card className="p-12 text-center text-xs text-muted-foreground border-dashed rounded-2xl">
           <Briefcase className="h-8 w-8 mx-auto opacity-40 mb-2 text-primary" />
           <p className="font-semibold text-foreground text-sm">No opportunities found</p>
           <p className="mt-1">Try selecting a different opportunity filter or search query.</p>
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredOpps.map((opp) => (
-            <Card key={opp.id} className="border border-border bg-card p-5 rounded-2xl shadow-2xs space-y-3.5 hover:border-primary/40 transition-all">
+              {filteredOpps.map((opp, idx) => (
+                <Card key={opp.id || `opp-${idx}`} className="border border-border bg-card p-5 rounded-2xl shadow-2xs space-y-3.5 hover:border-primary/40 transition-all">
               {/* Top Row: Author Info */}
               <div className="flex items-start justify-between gap-3">
                 <Link
@@ -403,7 +607,7 @@ const OpportunityPage = () => {
               </p>
 
               {/* Card Footer Actions */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs">
                 <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-[11px]">
                   {user && (Number(user.id) === Number(opp.userId) || user.role === 'ADMIN') ? (
                     <button
@@ -474,6 +678,16 @@ const OpportunityPage = () => {
                     >
                       <span>Verification Required</span>
                     </Button>
+                  ) : appliedOppMap.has(opp.id) ? (
+                    <Button
+                      size="sm"
+                      disabled
+                      variant="outline"
+                      className="h-8.5 px-3.5 text-xs font-bold gap-1.5 border-emerald-500/30 text-emerald-600 bg-emerald-500/10 cursor-not-allowed shadow-2xs"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Applied</span>
+                    </Button>
                   ) : (
                     <Button
                       size="sm"
@@ -521,29 +735,31 @@ const OpportunityPage = () => {
 
               <div>
                 <label className="font-semibold block mb-1">
-                  Upload Resume / CV (PDF / Word) {selectedOpp.isCvRequired ? '*' : '(Optional)'}
-                </label>
-                <div className="border border-dashed border-border p-3 rounded-xl bg-muted/20 text-center">
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => setCvFile(e.target.files?.[0] || null)}
-                    className="text-xs text-muted-foreground w-full cursor-pointer"
-                  />
-                  {cvFile && <p className="text-[11px] font-semibold text-primary mt-1">Selected: {cvFile.name}</p>}
-                </div>
-              </div>
-
-              <div>
-                <label className="font-semibold block mb-1">
-                  Or External CV / Portfolio Link (Optional)
+                  CV / Resume Link (Google Drive / Dropbox) {selectedOpp.isCvRequired ? '*' : '(Optional)'}
                 </label>
                 <Input
                   type="url"
                   value={applyCvUrl}
                   onChange={(e) => setApplyCvUrl(e.target.value)}
-                  placeholder="https://drive.google.com/file/d/your-cv or portfolio link"
-                  className="h-9 text-xs"
+                  placeholder="https://drive.google.com/file/d/your-cv-link"
+                  required={selectedOpp.isCvRequired}
+                  className="h-9.5 text-xs bg-background border-border"
+                />
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Ensure Google Drive link permission is set to "Anyone with the link can view".
+                </p>
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">
+                  Portfolio Link (Optional)
+                </label>
+                <Input
+                  type="url"
+                  value={applyPortfolioUrl}
+                  onChange={(e) => setApplyPortfolioUrl(e.target.value)}
+                  placeholder="https://yourportfolio.com or GitHub / LinkedIn link"
+                  className="h-9.5 text-xs bg-background border-border"
                 />
               </div>
             </div>
@@ -583,6 +799,11 @@ const OpportunityPage = () => {
                   <option value="CONTRACT">Contract</option>
                   <option value="FREELANCE">Freelance</option>
                   <option value="RESEARCH">Research</option>
+                  <option value="JOB">Job Opening</option>
+                  <option value="SCHOLARSHIP">Scholarship</option>
+                  <option value="TRAINING">Training</option>
+                  <option value="WORKSHOP">Workshop</option>
+                  <option value="OTHER">Other</option>
                 </select>
               </div>
 
@@ -647,8 +868,8 @@ const OpportunityPage = () => {
                   <p className="font-semibold text-foreground text-sm">No applications submitted yet</p>
                 </div>
               ) : (
-                applicantsList.map((app) => (
-                  <div key={app.id} className="p-4 bg-muted/30 rounded-xl border border-border space-y-2.5 text-xs">
+                applicantsList.map((app, idx) => (
+                  <div key={app.applicationId || app.id || `applicant-${idx}`} className="p-4 bg-muted/30 rounded-xl border border-border space-y-2.5 text-xs">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5">
                         <Avatar className="h-9 w-9 border border-border">
@@ -667,10 +888,10 @@ const OpportunityPage = () => {
                         variant="secondary"
                         className={`text-[10px] font-bold ${
                           app.status === 'ACCEPTED' || app.status === 'SHORTLISTED'
-                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20'
                             : app.status === 'REJECTED'
-                            ? 'bg-destructive/10 text-destructive'
-                            : 'bg-amber-500/10 text-amber-700'
+                            ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                            : 'bg-amber-500/10 text-amber-700 border border-amber-500/20'
                         }`}
                       >
                         {app.status}
@@ -683,36 +904,65 @@ const OpportunityPage = () => {
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between pt-1 text-[11px]">
-                      {app.cvUrl ? (
-                        <a
-                          href={app.cvUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline font-semibold flex items-center gap-1"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          <span>View Submitted CV</span>
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground italic">No CV attached</span>
-                      )}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {app.cvUrl ? (
+                          <a
+                            href={app.cvUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary font-bold flex items-center gap-1 bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>View CV</span>
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground italic text-[10px]">No CV attached</span>
+                        )}
+
+                        {app.portfolioUrl && (
+                          <a
+                            href={app.portfolioUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors cursor-pointer"
+                          >
+                            <Globe className="h-3.5 w-3.5" />
+                            <span>View Portfolio</span>
+                          </a>
+                        )}
+                      </div>
 
                       {/* Action buttons */}
                       <div className="flex items-center gap-1.5">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleUpdateApplicantStatus(app.id, 'SHORTLISTED')}
-                          className="h-7 px-2 text-[10px] font-semibold text-emerald-600 hover:bg-emerald-500/10"
+                        <Link
+                          href={app.studentId || app.userId ? `/profile/${app.studentId || app.userId}` : '#'}
+                          target="_blank"
                         >
-                          Shortlist
-                        </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-[10px] font-semibold text-primary hover:bg-primary/10 cursor-pointer gap-1"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            <span>View Profile</span>
+                          </Button>
+                        </Link>
+
+                        {app.status !== 'ACCEPTED' && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleAcceptApplicant(app.id)}
+                            className="h-7 px-2.5 text-[10px] font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer shadow-2xs"
+                          >
+                            Accept
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleUpdateApplicantStatus(app.id, 'REJECTED')}
-                          className="h-7 px-2 text-[10px] font-semibold text-destructive hover:bg-destructive/10"
+                          onClick={() => handleRejectApplicant(app.id)}
+                          className="h-7 px-2 text-[10px] font-semibold text-destructive border-destructive/30 hover:bg-destructive/10 cursor-pointer shadow-2xs"
                         >
                           Reject
                         </Button>

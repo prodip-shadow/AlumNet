@@ -4,7 +4,12 @@ const notificationService = require('../services/notification.service');
 
 const ALLOWED_TYPES = [
   'JOB',
+  'FULL_TIME',
+  'PART_TIME',
   'INTERNSHIP',
+  'CONTRACT',
+  'FREELANCE',
+  'RESEARCH',
   'SCHOLARSHIP',
   'EVENT',
   'TRAINING',
@@ -17,6 +22,7 @@ const ALLOWED_APPLICATION_STATUSES = [
   'SHORTLISTED',
   'SELECTED',
   'REJECTED',
+  'ACCEPTED',
 ];
 
 // Create Opportunity
@@ -405,6 +411,14 @@ const applyOpportunity = (req, res) => {
       });
     }
 
+    // Prevent applying to own opportunity
+    if (Number(opportunity.userId) === Number(studentId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot apply to your own opportunity posting.',
+      });
+    }
+
     // Check duplicate application
     opportunityModel.checkStudentApplied(id, studentId, (err, appliedResult) => {
       if (err) {
@@ -422,16 +436,18 @@ const applyOpportunity = (req, res) => {
       }
 
       const isCvRequired = Boolean(opportunity.isCvRequired);
-      const cvUrl = req.uploadedCvUrl || null;
+      const cvUrl = req.body?.cvUrl?.trim() || null;
+      const portfolioUrl = req.body?.portfolioUrl?.trim() || null;
+      const applicantMessage = req.body?.message?.trim() || null;
 
       if (isCvRequired && !cvUrl) {
         return res.status(400).json({
           success: false,
-          message: 'CV upload is mandatory for this opportunity',
+          message: 'CV / Resume link (Google Drive / Dropbox) is mandatory for this opportunity',
         });
       }
 
-      opportunityModel.applyOpportunity([id, studentId, cvUrl], (err) => {
+      opportunityModel.applyOpportunity([id, studentId, cvUrl, portfolioUrl, applicantMessage], (err) => {
         if (err) {
           return res.status(500).json({
             success: false,
@@ -479,6 +495,7 @@ const getMyApplications = (req, res) => {
       applicationId: app.applicationId,
       opportunityId: app.opportunityId,
       cvUrl: app.cvUrl,
+      portfolioUrl: app.portfolioUrl || null,
       status: app.status,
       message: app.message || null,
       appliedDate: app.appliedDate,
@@ -547,9 +564,16 @@ const getOpportunityApplicants = (req, res) => {
       }
 
       const response = applicants.map((app) => ({
+        id: app.applicationId,
         applicationId: app.applicationId,
         studentId: app.studentId,
+        userId: app.studentId,
         name: app.name,
+        userName: app.name,
+        studentName: app.name,
+        email: app.email || '',
+        userEmail: app.email || '',
+        studentEmail: app.email || '',
         profileImageUrl: app.profileImageUrl,
         currentSemester: app.currentSemester || null,
         departmentName: app.departmentName || null,
@@ -557,12 +581,14 @@ const getOpportunityApplicants = (req, res) => {
         status: app.status,
         message: app.message || null,
         cvUrl: app.cvUrl || null,
+        portfolioUrl: app.portfolioUrl || null,
         appliedAt: app.appliedAt,
       }));
 
       return res.status(200).json({
         success: true,
         applicants: response,
+        applications: response,
       });
     });
   });
@@ -625,6 +651,36 @@ const updateApplicationStatus = (req, res) => {
 
       const messageText = message?.trim() || null;
 
+      if (status === 'REJECTED') {
+        // Send notification to student prior to deletion
+        notificationService.createNotification(
+          {
+            userId: application.studentId,
+            actorUserId: userId,
+            type: 'APPLICATION_STATUS_CHANGED',
+            entityType: 'APPLICATION',
+            referenceId: Number(applicationId),
+            message: '{actor} rejected your application.',
+          },
+          req.app.get('io')
+        );
+
+        opportunityModel.deleteApplication(applicationId, (err) => {
+          if (err) {
+            return res.status(500).json({
+              success: false,
+              message: 'Server Error',
+            });
+          }
+
+          return res.status(200).json({
+            success: true,
+            message: 'Application rejected and removed successfully',
+          });
+        });
+        return;
+      }
+
       opportunityModel.updateApplicationStatus(
         applicationId,
         status,
@@ -639,8 +695,8 @@ const updateApplicationStatus = (req, res) => {
 
           // Trigger APPLICATION_STATUS_CHANGED Notification
           const notificationMessage = messageText
-            ? `Your application status has been updated to ${status}: ${messageText}`
-            : `Your application status has been updated to ${status}.`;
+            ? `{actor} accepted your application with note: "${messageText}"`
+            : `{actor} accepted your application.`;
 
           notificationService.createNotification(
             {
@@ -656,7 +712,7 @@ const updateApplicationStatus = (req, res) => {
 
           return res.status(200).json({
             success: true,
-            message: 'Application status updated successfully',
+            message: 'Application accepted successfully',
           });
         },
       );

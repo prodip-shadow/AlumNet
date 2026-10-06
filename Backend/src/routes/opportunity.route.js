@@ -29,18 +29,18 @@ router.get(
   opportunityController.getMyOpportunities,
 );
 
-// My Applications (Student Dashboard)
+// My Applications
 router.get(
   '/my-applications',
   verifyToken,
-  allowRoles('STUDENT'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   opportunityController.getMyApplications,
 );
 
 router.get(
   '/applications/my',
   verifyToken,
-  allowRoles('STUDENT'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   opportunityController.getMyApplications,
 );
 
@@ -75,12 +75,11 @@ router.delete(
   opportunityController.deleteOpportunity,
 );
 
-// Apply for Opportunity (Student)
+// Apply for Opportunity
 router.post(
   '/:id/apply',
   verifyToken,
-  allowRoles('STUDENT'),
-  ...uploadSingleCv('cv'),
+  allowRoles('STUDENT', 'ALUMNI', 'ADMIN'),
   opportunityController.applyOpportunity,
 );
 

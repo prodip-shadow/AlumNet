@@ -42,7 +42,7 @@ export default function UserProfileDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const userId = params.id;
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, loading: authLoading } = useAuth();
 
   const [profile, setProfile] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -166,11 +166,59 @@ export default function UserProfileDetailsPage() {
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 space-y-3">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm font-medium text-muted-foreground">Loading profile details...</p>
+      <div className="px-4 md:px-6 py-6 max-w-5xl mx-auto space-y-6">
+        <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+
+        {/* Hero Banner Skeleton */}
+        <Card className="border border-border bg-card p-6 md:p-8 rounded-3xl shadow-2xs space-y-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+            <div className="h-28 w-28 md:h-32 md:w-32 rounded-full bg-muted animate-pulse shrink-0 border-4 border-background" />
+            <div className="flex-1 space-y-3 w-full text-center md:text-left">
+              <div className="h-7 w-48 bg-muted animate-pulse rounded mx-auto md:mx-0" />
+              <div className="h-4 w-64 bg-muted animate-pulse rounded mx-auto md:mx-0" />
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
+                <div className="h-4 w-28 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Details Grid Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="border border-border bg-card p-6 rounded-2xl shadow-2xs space-y-4">
+              <div className="h-5 w-40 bg-muted animate-pulse rounded" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-14 bg-muted animate-pulse rounded-xl" />
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card className="border border-border bg-card p-6 rounded-2xl shadow-2xs space-y-4">
+              <div className="h-5 w-36 bg-muted animate-pulse rounded" />
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-12 bg-muted animate-pulse rounded-xl" />
+                ))}
+              </div>
+            </Card>
+
+            <Card className="border border-border bg-card p-6 rounded-2xl shadow-2xs space-y-4">
+              <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-7 w-16 bg-muted animate-pulse rounded-full" />
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }

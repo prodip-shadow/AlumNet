@@ -124,7 +124,8 @@ const Navbar = () => {
       const interval = setInterval(fetchNotifications, 30000);
 
       // Connect Socket.io client for real-time notifications
-      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
+      const socketUrl = process.env.NEXT_PUBLIC_API_URL;
+
       const socket = io(socketUrl, {
         withCredentials: true,
         transports: ['websocket', 'polling'],
@@ -134,12 +135,41 @@ const Navbar = () => {
         socket.emit('register', { userId: user.id });
       });
 
-      socket.on('new_notification', (notif) => {
+      const handleNewNotification = (notif) => {
+        if (!notif) return;
+
+        // Add to notification list state if not already present
+        setNotifications((prev) => {
+          if (notif.id && prev.some((n) => n.id === notif.id)) return prev;
+          // Increment unread count only for unique new notification
+          setUnreadCount((c) => c + 1);
+          return [{ ...notif, isRead: false }, ...prev];
+        });
+
+        // Fetch fresh list from server to sync DB state
         fetchNotifications();
+
         if (notif?.message) {
           const cleanMsg = notif.message.replace(/{actor\s*}/gi, notif.actorName || 'Someone');
-          toast.info(cleanMsg, { autoClose: 3500 });
+          const toastKey = `notif-${notif.id || notif.referenceId || cleanMsg}`;
+          toast.info(cleanMsg, { toastId: toastKey, autoClose: 3500 });
         }
+      };
+
+      socket.on('new_notification', handleNewNotification);
+
+      socket.on('notification-deleted', (data) => {
+        if (data?.id) {
+          setNotifications((prev) => prev.filter((n) => Number(n.id) !== Number(data.id)));
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        } else {
+          fetchNotifications();
+        }
+      });
+
+      socket.on('notifications-deleted', () => {
+        setNotifications([]);
+        setUnreadCount(0);
       });
 
       return () => {

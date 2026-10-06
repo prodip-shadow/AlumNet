@@ -28,8 +28,15 @@ const aiAssistantRoutes = require('./routes/aiAssistant.route');
 const alumniMigrationRoutes = require('./routes/alumniMigration.route');
 const adminRoutes = require('./routes/admin.route');
 
+const path = require('path');
+
 const app = express();
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: false,
+  })
+);
 
 app.use(
   cors({
@@ -38,14 +45,26 @@ app.use(
   }),
 );
 
-
-
 app.use(cookieParser());
+
+// Serve static uploads with cross-origin & direct attachment download headers enabled for PDF files
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    if (req.path.toLowerCase().endsWith('.pdf')) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment');
+    }
+    next();
+  },
+  express.static(path.join(__dirname, '../uploads'))
+);
 
 // Mount payment routes BEFORE general json parser for raw webhook body support
 app.use('/api/payments', paymentRoutes);
 app.use('/api/stripe', paymentRoutes);
-
 
 app.use(express.json());
 
