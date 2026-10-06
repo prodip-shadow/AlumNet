@@ -31,6 +31,7 @@ import { toast } from 'react-toastify';
 import { confirmAlert } from '@/lib/swal';
 import Link from 'next/link';
 import PaymentHistoryModal from '@/components/dashboard/PaymentHistoryModal';
+import { useSyncedTab } from '@/hooks/useSyncedTab';
 
 const EventPage = () => {
   const { user } = useAuth();
@@ -38,7 +39,7 @@ const EventPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('ALL'); // ALL, UPCOMING, FREE, PAID, MY_APPLIED
+  const [filterType, setFilterType] = useSyncedTab('tab', 'ALL', 'events_page');
 
   // Applied Events State
   const [myRegistrations, setMyRegistrations] = useState([]);

@@ -40,9 +40,10 @@ import { toast } from 'react-toastify';
 import { confirmAlert } from '@/lib/swal';
 import MyCreatedEventsSection from '@/components/shared/MyCreatedEventsSection';
 import PaymentHistorySection from '@/components/shared/PaymentHistorySection';
+import { useSyncedTab } from '@/hooks/useSyncedTab';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useSyncedTab('tab', 'users', 'admin_dashboard');
 
   // Stats State
   const [stats, setStats] = useState({

@@ -36,6 +36,7 @@ import {
 import { toast } from 'react-toastify';
 import { confirmAlert, themeSwal } from '@/lib/swal';
 import Link from 'next/link';
+import { useSyncedTab } from '@/hooks/useSyncedTab';
 
 const OpportunityTypes = [
   { id: '', label: 'All Opportunities' },
@@ -82,7 +83,7 @@ const OpportunityPage = () => {
 
   // Student Applications State
   const [myApplications, setMyApplications] = useState([]);
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'my-applications'
+  const [activeTab, setActiveTab] = useSyncedTab('tab', 'all', 'opportunities_page');
 
   const showFeedback = (type, msg) => {
     if (type === 'success') toast.success(msg, { autoClose: 1500 });
@@ -415,23 +416,21 @@ const OpportunityPage = () => {
           <div className="flex items-center gap-2 border-b border-border pb-2">
             <button
               onClick={() => setActiveTab('all')}
-              className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
-                activeTab === 'all'
+              className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${activeTab === 'all'
                   ? 'bg-primary text-primary-foreground shadow-2xs'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              }`}
+                }`}
             >
               All Opportunities
             </button>
             <button
               onClick={() => setActiveTab('my-applications')}
-              className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'my-applications'
+              className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === 'my-applications'
                   ? 'bg-primary text-primary-foreground shadow-2xs'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              }`}
+                }`}
             >
-              <span>My Applications</span>
+              <span>My Applied Opportunities</span>
               {myApplications.length > 0 && (
                 <span className="text-[10px] px-1.5 py-0.2 bg-primary-foreground/20 rounded-full font-extrabold">
                   {myApplications.length}
@@ -466,9 +465,8 @@ const OpportunityPage = () => {
                       setSelectedType(t.id);
                       setPage(1);
                     }}
-                    className={`h-8 px-3 text-xs font-semibold cursor-pointer shrink-0 rounded-lg ${
-                      isSelected ? 'shadow-2xs' : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`h-8 px-3 text-xs font-semibold cursor-pointer shrink-0 rounded-lg ${isSelected ? 'shadow-2xs' : 'text-muted-foreground hover:text-foreground'
+                      }`}
                   >
                     {t.label}
                   </Button>
@@ -505,13 +503,12 @@ const OpportunityPage = () => {
                         </h3>
                         <Badge
                           variant="secondary"
-                          className={`text-[10px] font-bold ${
-                            isAccepted
+                          className={`text-[10px] font-bold ${isAccepted
                               ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20'
                               : isRejected
-                              ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                              : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20'
-                          }`}
+                                ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                                : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20'
+                            }`}
                         >
                           {isAccepted ? 'Accepted' : isRejected ? 'Rejected' : 'Pending'}
                         </Badge>
@@ -568,8 +565,8 @@ const OpportunityPage = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-              {filteredOpps.map((opp, idx) => (
-                <Card key={opp.id || `opp-${idx}`} className="border border-border bg-card p-5 rounded-2xl shadow-2xs space-y-3.5 hover:border-primary/40 transition-all">
+          {filteredOpps.map((opp, idx) => (
+            <Card key={opp.id || `opp-${idx}`} className="border border-border bg-card p-5 rounded-2xl shadow-2xs space-y-3.5 hover:border-primary/40 transition-all">
               {/* Top Row: Author Info */}
               <div className="flex items-start justify-between gap-3">
                 <Link
@@ -639,11 +636,10 @@ const OpportunityPage = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => handleToggleOppStatus(opp)}
-                        className={`h-8 px-2.5 text-[11px] font-semibold cursor-pointer ${
-                          opp.status === 'ACTIVE'
+                        className={`h-8 px-2.5 text-[11px] font-semibold cursor-pointer ${opp.status === 'ACTIVE'
                             ? 'text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10'
                             : 'text-muted-foreground border-border'
-                        }`}
+                          }`}
                       >
                         {opp.status === 'ACTIVE' ? 'Active' : 'Closed'}
                       </Button>
@@ -886,13 +882,12 @@ const OpportunityPage = () => {
 
                       <Badge
                         variant="secondary"
-                        className={`text-[10px] font-bold ${
-                          app.status === 'ACCEPTED' || app.status === 'SHORTLISTED'
+                        className={`text-[10px] font-bold ${app.status === 'ACCEPTED' || app.status === 'SHORTLISTED'
                             ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20'
                             : app.status === 'REJECTED'
-                            ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                            : 'bg-amber-500/10 text-amber-700 border border-amber-500/20'
-                        }`}
+                              ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                              : 'bg-amber-500/10 text-amber-700 border border-amber-500/20'
+                          }`}
                       >
                         {app.status}
                       </Badge>

@@ -34,10 +34,11 @@ import { toast } from 'react-toastify';
 import ProjectsSection from '@/components/shared/ProjectsSection';
 import MyCreatedEventsSection from '@/components/shared/MyCreatedEventsSection';
 import PaymentHistorySection from '@/components/shared/PaymentHistorySection';
+import { useSyncedTab } from '@/hooks/useSyncedTab';
 
 const StudentDashboard = () => {
   const { user, setUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useSyncedTab('tab', 'profile', 'student_dashboard');
   const fileInputRef = useRef(null);
 
   // Profile State

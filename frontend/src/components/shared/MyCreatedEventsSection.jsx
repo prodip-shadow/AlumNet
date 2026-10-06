@@ -22,10 +22,11 @@ import {
   Power,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useSyncedTab } from '@/hooks/useSyncedTab';
 
 export default function MyCreatedEventsSection({ isAdmin = false }) {
   const { user } = useAuth();
-  const [viewTab, setViewTab] = useState('hosted'); // 'hosted' | 'my'
+  const [viewTab, setViewTab] = useSyncedTab('subtab', 'hosted', 'my_created_events');
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusLoadingId, setStatusLoadingId] = useState(null);

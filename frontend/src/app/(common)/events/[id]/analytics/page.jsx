@@ -3,6 +3,7 @@
 import React, { useState, useEffect, use, useCallback } from 'react';
 import Link from 'next/link';
 import api from '@/lib/axios';
+import { useSyncedTab } from '@/hooks/useSyncedTab';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,7 +71,7 @@ export default function EventAnalyticsPage({ params }) {
     fetchAnalytics();
   }, [fetchAnalytics]);
 
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'accepted' | 'rejected'
+  const [activeTab, setActiveTab] = useSyncedTab('tab', 'all', 'analytics_page');
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
   // Status update handler (Accept / Reject)

@@ -27,11 +27,13 @@ import Link from 'next/link';
 import { toast } from 'react-toastify';
 import { confirmAlert } from '@/lib/swal';
 
+import { useSyncedTab } from '@/hooks/useSyncedTab';
+
 const ConnectionsPage = () => {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const isStudent = user?.role === 'STUDENT';
-  const [activeTab, setActiveTab] = useState('connections'); // connections, incoming, outgoing
+  const [activeTab, setActiveTab] = useSyncedTab('tab', 'connections', 'connections_page');
 
   // Connections Data
   const [connections, setConnections] = useState([]);

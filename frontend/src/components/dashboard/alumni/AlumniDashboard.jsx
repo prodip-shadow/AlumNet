@@ -44,10 +44,11 @@ import ProjectsSection from '@/components/shared/ProjectsSection';
 import MyCreatedEventsSection from '@/components/shared/MyCreatedEventsSection';
 import PaymentHistorySection from '@/components/shared/PaymentHistorySection';
 import Link from 'next/link';
+import { useSyncedTab } from '@/hooks/useSyncedTab';
 
 const AlumniDashboard = () => {
   const { user, setUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useSyncedTab('tab', 'profile', 'alumni_dashboard');
   const fileInputRef = useRef(null);
 
   // Profile State
