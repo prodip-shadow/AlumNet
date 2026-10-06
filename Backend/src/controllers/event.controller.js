@@ -52,6 +52,19 @@ const grantPermission = (req, res) => {
         });
       }
 
+      // Send real-time live notification
+      notificationService.createNotification(
+        {
+          userId: Number(userId),
+          actorUserId: grantedBy,
+          type: 'EVENT_PERMISSION_GRANTED',
+          entityType: 'EVENT',
+          referenceId: Number(userId),
+          message: '{actor} granted you permission to create and host university events!',
+        },
+        req.app.get('io')
+      );
+
       return res.status(200).json({
         success: true,
         message: 'Event creation permission granted successfully',
@@ -63,6 +76,7 @@ const grantPermission = (req, res) => {
 // Admin: Revoke Event Creator Permission
 const revokePermission = (req, res) => {
   const { userId } = req.params;
+  const revokedBy = req.user.id;
 
   eventModel.revokeCreatorPermission(userId, (err) => {
     if (err) {
@@ -71,6 +85,19 @@ const revokePermission = (req, res) => {
         message: 'Server Error',
       });
     }
+
+    // Send real-time live notification
+    notificationService.createNotification(
+      {
+        userId: Number(userId),
+        actorUserId: revokedBy,
+        type: 'EVENT_PERMISSION_REVOKED',
+        entityType: 'EVENT',
+        referenceId: Number(userId),
+        message: '{actor} revoked your event creation permission.',
+      },
+      req.app.get('io')
+    );
 
     return res.status(200).json({
       success: true,
@@ -264,15 +291,16 @@ const createEvent = (req, res) => {
   }
 };
 
-// Get All Events (Feed - ACTIVE only)
+// Get All Events (Feed - ACTIVE only unless includeInactive=true)
 const getAllEvents = (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const pageSize = Math.max(1, parseInt(req.query.pageSize) || 100);
+  const includeInactive = Boolean(req.query.includeInactive === 'true' || req.query.all === 'true');
 
   const limit = pageSize;
   const offset = (page - 1) * pageSize;
 
-  eventModel.getAllEvents(limit, offset, (err, events) => {
+  eventModel.getAllEvents(limit, offset, includeInactive, (err, events) => {
     if (err) {
       return res.status(500).json({
         success: false,
@@ -516,19 +544,23 @@ const updateEventStatus = (req, res) => {
     }
 
     const event = result[0];
+    const eventCreatorId = event.creatorUserId || event.userId || event.createdById;
 
-    if (Number(event.creatorUserId) !== Number(userId) && userRole !== 'ADMIN') {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized',
-      });
-    }
+    eventModel.checkCreatorPermission(userId, (permErr, permRows) => {
+      const isPermitted = !permErr && permRows && permRows.length > 0;
+      const canToggle = Number(eventCreatorId) === Number(userId) || userRole === 'ADMIN' || Boolean(isPermitted);
+      if (!canToggle) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized',
+        });
+      }
 
-    const regOpen = isRegistrationOpen !== undefined
-      ? Boolean(isRegistrationOpen)
-      : (status === 'ACTIVE');
+      const regOpen = isRegistrationOpen !== undefined
+        ? Boolean(isRegistrationOpen)
+        : (status === 'ACTIVE');
 
-    eventModel.updateEventStatus(id, status, regOpen, (err) => {
+      eventModel.updateEventStatus(id, status, regOpen, (err) => {
       if (err) {
         return res.status(500).json({
           success: false,
@@ -565,6 +597,7 @@ const updateEventStatus = (req, res) => {
       });
     });
   });
+});
 };
 
 // Delete Event
@@ -746,7 +779,7 @@ const registerForEvent = (req, res) => {
           line_items: [
             {
               price_data: {
-                currency: 'usd',
+                currency: 'bdt',
                 product_data: {
                   name: event.title,
                   description: `Event Registration Fee for ${event.title}`,
@@ -863,6 +896,110 @@ const getUserPaymentHistory = (req, res) => {
   });
 };
 
+// Creator / Admin: Update Event Registration Status (ACCEPT / REJECT)
+const updateRegistrationStatus = (req, res) => {
+  const { registrationId } = req.params;
+  const { status } = req.body;
+  const userId = req.user.id;
+
+  if (!status || !['ACCEPTED', 'REJECTED', 'PENDING', 'REGISTERED'].includes(status.toUpperCase())) {
+    return res.status(400).json({ success: false, message: 'Invalid registration status specified' });
+  }
+
+  const targetStatus = status.toUpperCase();
+
+  eventModel.getRegistrationById(registrationId, (err, regResult) => {
+    if (err || !regResult || regResult.length === 0) {
+      return res.status(404).json({ success: false, message: 'Registration record not found' });
+    }
+
+    const reg = regResult[0];
+
+    eventModel.getEventById(reg.eventId, (evtErr, evtResult) => {
+      if (evtErr || !evtResult || evtResult.length === 0) {
+        return res.status(404).json({ success: false, message: 'Event not found' });
+      }
+
+      const event = evtResult[0];
+      const isCreator = Number(event.creatorUserId) === Number(userId);
+      const isAdmin = req.user.role === 'ADMIN';
+
+      if (!isCreator && !isAdmin) {
+        return res.status(403).json({ success: false, message: 'Only the event creator or admin can update registration status' });
+      }
+
+      eventModel.updateRegistrationStatus(registrationId, targetStatus, (updErr) => {
+        if (updErr) {
+          return res.status(500).json({ success: false, message: 'Server Error' });
+        }
+
+        // If registration is ACCEPTED, update paymentStatus if needed
+        if (targetStatus === 'ACCEPTED') {
+          const isFree = Boolean(event.isFree) || Number(event.registrationFee || 0) === 0 || Number(reg.amount || 0) === 0;
+          const newPaymentStatus = isFree ? 'FREE' : 'PAID';
+          db.query(
+            "UPDATE event_registrations SET paymentStatus = ? WHERE id = ?",
+            [newPaymentStatus, registrationId],
+            () => {}
+          );
+        }
+
+        // Live notification
+        notificationService.createNotification(
+          {
+            userId: Number(reg.userId),
+            actorUserId: userId,
+            type: targetStatus === 'ACCEPTED' ? 'EVENT_REGISTRATION_ACCEPTED' : 'EVENT_REGISTRATION_REJECTED',
+            entityType: 'EVENT',
+            referenceId: Number(event.id),
+            message: targetStatus === 'ACCEPTED'
+              ? `{actor} accepted your registration for event "${event.title}".`
+              : `{actor} updated your registration status for event "${event.title}".`,
+          },
+          req.app.get('io')
+        );
+
+        return res.status(200).json({
+          success: true,
+          message: `Registration status updated to ${targetStatus} successfully`,
+        });
+      });
+    });
+  });
+};
+
+// Creator / Admin: Delete All My Events
+const deleteAllMyEvents = (req, res) => {
+  const userId = req.user.id;
+
+  eventModel.deleteAllMyEvents(userId, (err, result) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Server Error' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'All your created events have been deleted successfully',
+    });
+  });
+};
+
+// User: Get My Applied Events (Registrations)
+const getMyRegistrations = (req, res) => {
+  const userId = req.user.id;
+
+  eventModel.getMyRegistrations(userId, (err, registrations) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Server Error' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      registrations: registrations || [],
+    });
+  });
+};
+
 module.exports = {
   grantPermission,
   revokePermission,
@@ -874,7 +1011,10 @@ module.exports = {
   updateEvent,
   updateEventStatus,
   deleteEvent,
+  deleteAllMyEvents,
   registerForEvent,
   getEventRegistrations,
   getUserPaymentHistory,
+  updateRegistrationStatus,
+  getMyRegistrations,
 };

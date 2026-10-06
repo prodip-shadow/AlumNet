@@ -739,3 +739,6 @@ CREATE INDEX idx_ama_status ON alumni_migration_applications(status);
 -- Opportunity Applications Updates (ACCEPTED status & portfolioUrl)
 ALTER TABLE opportunity_applications MODIFY COLUMN status ENUM('APPLIED', 'SHORTLISTED', 'SELECTED', 'REJECTED', 'ACCEPTED') DEFAULT 'APPLIED';
 ALTER TABLE opportunity_applications ADD COLUMN portfolioUrl VARCHAR(500) DEFAULT NULL AFTER cvUrl;
+
+-- Event Registrations Status Update (PENDING, ACCEPTED, REJECTED)
+ALTER TABLE event_registrations MODIFY COLUMN registrationStatus ENUM('PENDING', 'ACCEPTED', 'REJECTED', 'REGISTERED', 'ATTENDED', 'CANCELLED', 'FAILED') DEFAULT 'PENDING';

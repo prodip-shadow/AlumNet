@@ -79,18 +79,24 @@ const createEvent = (data, callback) => {
 };
 
 // Get All Events (Feed - ACTIVE events sorted by eventDate ASC)
-const getAllEvents = (limit, offset, callback) => {
+const getAllEvents = (limit, offset, includeInactive = false, callback) => {
+  if (typeof includeInactive === 'function') {
+    callback = includeInactive;
+    includeInactive = false;
+  }
+  const whereClause = includeInactive ? 'WHERE 1=1' : "WHERE events.status = 'ACTIVE'";
   const sql = `
     SELECT
       events.*,
       users.name AS creatorName,
       users.profileImageUrl AS creatorProfileImageUrl,
       users.role AS creatorRole,
-      (SELECT COUNT(*) FROM event_registrations WHERE event_registrations.eventId = events.id AND (event_registrations.paymentStatus IN ('PAID', 'FREE') OR event_registrations.registrationStatus = 'REGISTERED')) AS currentRegistrationCount
+      (SELECT COUNT(*) FROM event_registrations WHERE event_registrations.eventId = events.id AND (event_registrations.registrationStatus NOT IN ('CANCELLED', 'REJECTED', 'FAILED') OR event_registrations.registrationStatus IS NULL)) AS currentRegistrationCount,
+      (SELECT COALESCE(SUM(amount), 0) FROM event_registrations WHERE event_registrations.eventId = events.id AND event_registrations.paymentStatus = 'PAID') AS totalCollectedAmount
     FROM events
     INNER JOIN users
       ON events.creatorUserId = users.id
-    WHERE events.status = 'ACTIVE'
+    ${whereClause}
     ORDER BY events.createdAt DESC, events.eventDate ASC
     LIMIT ? OFFSET ?
   `;
@@ -103,7 +109,7 @@ const getMyEvents = (creatorUserId, callback) => {
   const sql = `
     SELECT
       events.*,
-      (SELECT COUNT(*) FROM event_registrations WHERE event_registrations.eventId = events.id AND event_registrations.registrationStatus = 'REGISTERED') AS registrationCount,
+      (SELECT COUNT(*) FROM event_registrations WHERE event_registrations.eventId = events.id AND (event_registrations.registrationStatus NOT IN ('CANCELLED', 'REJECTED', 'FAILED') OR event_registrations.registrationStatus IS NULL)) AS registrationCount,
       (SELECT COUNT(*) FROM event_registrations WHERE event_registrations.eventId = events.id AND event_registrations.paymentStatus = 'PAID') AS paymentCount,
       (SELECT COALESCE(SUM(amount), 0) FROM event_registrations WHERE event_registrations.eventId = events.id AND event_registrations.paymentStatus = 'PAID') AS totalCollectedAmount
     FROM events
@@ -122,7 +128,7 @@ const getEventById = (id, callback) => {
       users.name AS creatorName,
       users.profileImageUrl AS creatorProfileImageUrl,
       users.role AS creatorRole,
-      (SELECT COUNT(*) FROM event_registrations WHERE event_registrations.eventId = events.id AND (event_registrations.paymentStatus IN ('PAID', 'FREE') OR event_registrations.registrationStatus = 'REGISTERED')) AS currentRegistrationCount
+      (SELECT COUNT(*) FROM event_registrations WHERE event_registrations.eventId = events.id AND (event_registrations.registrationStatus NOT IN ('CANCELLED', 'REJECTED', 'FAILED') OR event_registrations.registrationStatus IS NULL)) AS currentRegistrationCount
     FROM events
     INNER JOIN users
       ON events.creatorUserId = users.id
@@ -199,7 +205,7 @@ const createFreeRegistration = (eventId, userId, callback) => {
       paymentStatus,
       registrationStatus
     )
-    VALUES (?, ?, 0.00, 'FREE', 'REGISTERED')
+    VALUES (?, ?, 0.00, 'FREE', 'PENDING')
   `;
 
   db.query(sql, [eventId, userId], callback);
@@ -216,12 +222,12 @@ const upsertPendingRegistration = (eventId, userId, stripeSessionId, amount, cal
       paymentStatus,
       registrationStatus
     )
-    VALUES (?, ?, ?, ?, 'PENDING', 'REGISTERED')
+    VALUES (?, ?, ?, ?, 'PENDING', 'PENDING')
     ON DUPLICATE KEY UPDATE
       stripeSessionId = VALUES(stripeSessionId),
       amount = VALUES(amount),
       paymentStatus = 'PENDING',
-      registrationStatus = 'REGISTERED'
+      registrationStatus = 'PENDING'
   `;
 
   db.query(sql, [eventId, userId, stripeSessionId, amount], callback);
@@ -332,6 +338,70 @@ const updateRegistrationByPaymentIntentId = (paymentIntentId, paymentStatus, reg
   db.query(sql, [paymentStatus, registrationStatus, paymentIntentId], callback);
 };
 
+// Get Registration By ID
+const getRegistrationById = (registrationId, callback) => {
+  const sql = `
+    SELECT *
+    FROM event_registrations
+    WHERE id = ?
+  `;
+
+  db.query(sql, [registrationId], callback);
+};
+
+// Update Registration Status
+const updateRegistrationStatus = (registrationId, status, callback) => {
+  const sql = `
+    UPDATE event_registrations
+    SET registrationStatus = ?
+    WHERE id = ?
+  `;
+
+  db.query(sql, [status, registrationId], callback);
+};
+
+// Delete All Events Created By User
+const deleteAllMyEvents = (creatorUserId, callback) => {
+  const sql = `
+    DELETE FROM events
+    WHERE creatorUserId = ?
+  `;
+
+  db.query(sql, [creatorUserId], callback);
+};
+
+// Get User Applied Events (Registrations with full event details)
+const getMyRegistrations = (userId, callback) => {
+  const sql = `
+    SELECT
+      event_registrations.id AS registrationId,
+      event_registrations.eventId,
+      event_registrations.amount,
+      event_registrations.paymentStatus,
+      event_registrations.registrationStatus,
+      event_registrations.createdAt AS registrationDate,
+      event_registrations.createdAt AS registeredAt,
+      events.title,
+      events.description,
+      events.location,
+      events.eventDate,
+      events.registrationFee,
+      events.isFree,
+      events.bannerImageUrl,
+      events.bannerImageUrl AS bannerUrl,
+      events.status AS eventStatus,
+      users.name AS creatorName,
+      users.profileImageUrl AS creatorProfileImageUrl
+    FROM event_registrations
+    INNER JOIN events ON event_registrations.eventId = events.id
+    LEFT JOIN users ON events.creatorUserId = users.id
+    WHERE event_registrations.userId = ?
+    ORDER BY event_registrations.createdAt DESC
+  `;
+
+  db.query(sql, [userId], callback);
+};
+
 module.exports = {
   checkCreatorPermission,
   grantCreatorPermission,
@@ -344,6 +414,7 @@ module.exports = {
   updateEvent,
   updateEventStatus,
   deleteEvent,
+  deleteAllMyEvents,
   checkUserRegistration,
   createFreeRegistration,
   upsertPendingRegistration,
@@ -353,4 +424,7 @@ module.exports = {
   updateRegistrationByPaymentIntentId,
   getEventRegistrations,
   getUserPaymentHistory,
+  getRegistrationById,
+  updateRegistrationStatus,
+  getMyRegistrations,
 };

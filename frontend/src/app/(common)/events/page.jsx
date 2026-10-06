@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '@/lib/axios';
 import { useAuth } from '@/context/AuthContext';
 import { Card } from '@/components/ui/card';
@@ -34,10 +34,15 @@ import PaymentHistoryModal from '@/components/dashboard/PaymentHistoryModal';
 
 const EventPage = () => {
   const { user } = useAuth();
+  const bannerInputRef = useRef(null);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('ALL'); // ALL, UPCOMING, FREE, PAID
+  const [filterType, setFilterType] = useState('ALL'); // ALL, UPCOMING, FREE, PAID, MY_APPLIED
+
+  // Applied Events State
+  const [myRegistrations, setMyRegistrations] = useState([]);
+  const [loadingMyRegistrations, setLoadingMyRegistrations] = useState(false);
 
   // Register Modal State
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -89,6 +94,21 @@ const EventPage = () => {
     }
   }, []);
 
+  const fetchMyRegistrations = useCallback(async () => {
+    if (!user) return;
+    setLoadingMyRegistrations(true);
+    try {
+      const res = await api.get('/api/events/my-registrations');
+      if (res.data?.success && Array.isArray(res.data.registrations)) {
+        setMyRegistrations(res.data.registrations);
+      }
+    } catch (err) {
+      console.error('Error fetching my registrations:', err);
+    } finally {
+      setLoadingMyRegistrations(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchEvents(true);
 
@@ -103,6 +123,12 @@ const EventPage = () => {
         .catch((err) => console.warn('Error loading user registered events:', err));
     }
   }, [fetchEvents, user]);
+
+  useEffect(() => {
+    if (filterType === 'MY_APPLIED') {
+      fetchMyRegistrations();
+    }
+  }, [filterType, fetchMyRegistrations]);
 
   // Handle Event Registration (With Stripe Redirect for Paid Events)
   const handleRegisterEvent = async (eventId) => {
@@ -360,6 +386,7 @@ const EventPage = () => {
             { id: 'UPCOMING', label: 'Upcoming' },
             { id: 'FREE', label: 'Free' },
             { id: 'PAID', label: 'Paid' },
+            ...(user ? [{ id: 'MY_APPLIED', label: 'My Applied Events' }] : []),
           ].map((tab) => (
             <Button
               key={tab.id}
@@ -374,8 +401,108 @@ const EventPage = () => {
         </div>
       </div>
 
-      {/* Events Grid */}
-      {loading ? (
+      {/* Events / Applied Events Grid */}
+      {filterType === 'MY_APPLIED' ? (
+        loadingMyRegistrations ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <Card key={idx} className="p-5 border border-border bg-card rounded-2xl shadow-2xs space-y-3 animate-pulse">
+                <div className="h-6 w-24 bg-muted rounded" />
+                <div className="h-5 w-48 bg-muted rounded" />
+                <div className="h-16 bg-muted rounded" />
+              </Card>
+            ))}
+          </div>
+        ) : myRegistrations.length === 0 ? (
+          <Card className="p-12 text-center text-xs text-muted-foreground border-dashed">
+            <Ticket className="h-8 w-8 mx-auto opacity-40 mb-2 text-primary" />
+            <p className="font-semibold text-foreground text-sm">No applied events found</p>
+            <p className="mt-1">You haven't registered or applied for any events yet.</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {myRegistrations.map((reg) => {
+              const status = (reg.registrationStatus || 'PENDING').toUpperCase();
+              const isPaidEvent = Boolean(!reg.isFree && Number(reg.registrationFee || 0) > 0);
+              const fee = Number(reg.registrationFee || 0);
+
+              let statusBadgeClass = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+              if (status === 'ACCEPTED') statusBadgeClass = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20';
+              if (status === 'REJECTED') statusBadgeClass = 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20';
+              if (status === 'REGISTERED') statusBadgeClass = 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20';
+
+              let displayPaymentStatus = (reg.paymentStatus || 'FREE').toUpperCase();
+              if (displayPaymentStatus === 'PENDING' && (status === 'ACCEPTED' || !isPaidEvent)) {
+                displayPaymentStatus = isPaidEvent ? 'PAID' : 'FREE';
+              }
+
+              let paymentBadgeClass = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+              if (displayPaymentStatus === 'FREE' || displayPaymentStatus === 'PAID' || displayPaymentStatus === 'COMPLETED') {
+                paymentBadgeClass = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20';
+              } else if (displayPaymentStatus === 'FAILED') {
+                paymentBadgeClass = 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20';
+              }
+
+              return (
+                <Card key={reg.registrationId || reg.id} className="border border-border bg-card p-5 rounded-2xl shadow-2xs space-y-4 hover:border-primary/40 transition-all flex flex-col justify-between group">
+                  <div className="space-y-3">
+                    {(reg.bannerUrl || reg.bannerImageUrl) && (
+                      <div className="relative w-full h-36 rounded-xl overflow-hidden border border-border bg-muted">
+                        <img src={reg.bannerUrl || reg.bannerImageUrl} alt={reg.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge variant="secondary" className={`text-[10px] font-bold border ${statusBadgeClass}`}>
+                        Status: {status}
+                      </Badge>
+
+                      <Badge variant="outline" className="text-[10px] font-medium">
+                        {isPaidEvent ? `৳${fee} BDT` : 'Free Event'}
+                      </Badge>
+                    </div>
+
+                    <h3 className="font-bold text-base text-foreground leading-snug">
+                      {reg.title}
+                    </h3>
+
+                    <div className="space-y-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5 text-foreground font-medium">
+                        <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span>
+                          {new Date(reg.eventDate).toLocaleDateString([], {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="truncate">{reg.location}</span>
+                      </div>
+                    </div>
+
+                    {reg.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        {reg.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-border/70 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Applied: {new Date(reg.registeredAt || reg.registrationDate).toLocaleDateString()}</span>
+                    <Badge variant="secondary" className={`text-[10px] font-bold border ${paymentBadgeClass}`}>
+                      Payment: {displayPaymentStatus}
+                    </Badge>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )
+      ) : loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, idx) => (
             <Card key={idx} className="p-5 border border-border bg-card rounded-2xl shadow-2xs space-y-3 animate-pulse">
@@ -463,9 +590,11 @@ const EventPage = () => {
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-bold text-base text-foreground leading-snug group-hover:text-primary transition-colors">
-                    {ev.title}
-                  </h3>
+                  <Link href={`/events/${ev.id}`}>
+                    <h3 className="font-bold text-base text-foreground leading-snug group-hover:text-primary transition-colors cursor-pointer hover:underline">
+                      {ev.title}
+                    </h3>
+                  </Link>
 
                   {/* Date & Location */}
                   <div className="space-y-1.5 text-xs text-muted-foreground">
@@ -535,29 +664,42 @@ const EventPage = () => {
                     )}
                   </div>
 
-                  {/* Register Button */}
-                  <Button
-                    size="sm"
-                    onClick={() => handleRegisterEvent(ev.id)}
-                    disabled={isRegistered || registering}
-                    className={`w-full text-xs font-semibold gap-1.5 cursor-pointer h-8.5 shadow-2xs ${
-                      isRegistered
-                        ? 'bg-muted text-muted-foreground hover:bg-muted border border-border'
-                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    }`}
-                  >
-                    {isRegistered ? (
-                      <>
-                        <CheckCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                        <span>Registered</span>
-                      </>
-                    ) : (
-                      <>
-                        <Ticket className="h-3.5 w-3.5" />
-                        <span>{isPaidEvent ? `Register (৳${fee})` : 'Join Free'}</span>
-                      </>
-                    )}
-                  </Button>
+                  {/* Action Buttons: View Details & Register */}
+                  <div className="flex items-center gap-2">
+                    <Link href={`/events/${ev.id}`} className="flex-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full text-xs font-semibold gap-1.5 cursor-pointer h-8.5 border-border hover:bg-muted"
+                      >
+                        <Eye className="h-3.5 w-3.5 text-primary" />
+                        <span>View Details</span>
+                      </Button>
+                    </Link>
+
+                    <Button
+                      size="sm"
+                      onClick={() => handleRegisterEvent(ev.id)}
+                      disabled={isRegistered || registering}
+                      className={`flex-1 text-xs font-semibold gap-1.5 cursor-pointer h-8.5 shadow-2xs ${
+                        isRegistered
+                          ? 'bg-muted text-muted-foreground hover:bg-muted border border-border'
+                          : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      }`}
+                    >
+                      {isRegistered ? (
+                        <>
+                          <CheckCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Registered</span>
+                        </>
+                      ) : (
+                        <>
+                          <Ticket className="h-3.5 w-3.5" />
+                          <span>{isPaidEvent ? `Register (৳${fee})` : 'Join Free'}</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </Card>
             );
@@ -684,18 +826,23 @@ const EventPage = () => {
 
               <div>
                 <label className="font-semibold block mb-1">Event Banner Image</label>
-                <div className="border border-dashed border-border rounded-xl p-3 bg-muted/20 text-center">
+                <div
+                  onClick={() => bannerInputRef.current?.click()}
+                  className="border border-dashed border-border rounded-xl p-4 bg-muted/20 hover:bg-muted/40 transition-colors text-center cursor-pointer"
+                >
                   {bannerPreview ? (
                     <div className="relative h-28 w-full rounded-lg overflow-hidden border border-border mb-2">
                       <img src={bannerPreview} alt="Banner Preview" className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-2 text-muted-foreground">
-                      <ImageIcon className="h-5 w-5 mb-1 text-primary" />
-                      <span className="text-[11px]">Upload custom event banner image</span>
+                    <div className="flex flex-col items-center justify-center py-3 text-muted-foreground">
+                      <ImageIcon className="h-6 w-6 mb-1.5 text-primary" />
+                      <span className="text-xs font-medium text-foreground">Click anywhere here to select banner image</span>
+                      <span className="text-[10px] text-muted-foreground mt-0.5">JPG, PNG, WebP up to 5MB</span>
                     </div>
                   )}
                   <input
+                    ref={bannerInputRef}
                     type="file"
                     accept="image/*"
                     onChange={(e) => {
@@ -705,7 +852,7 @@ const EventPage = () => {
                         setBannerPreview(URL.createObjectURL(file));
                       }
                     }}
-                    className="text-xs text-muted-foreground w-full cursor-pointer"
+                    className="hidden"
                   />
                 </div>
               </div>

@@ -28,21 +28,21 @@ router.get(
   eventController.listPermittedUsers,
 );
 
-// Event CRUD Routes (Accessible by Admin and permitted Alumni / Student creators)
-router.post(
-  '/',
+// User Registrations Route (MUST BE BEFORE /:id)
+router.get(
+  '/my-registrations',
+  verifyToken,
+  eventController.getMyRegistrations,
+);
+
+router.patch(
+  '/registrations/:registrationId/status',
   verifyToken,
   allowRoles('ADMIN', 'ALUMNI', 'STUDENT'),
-  ...uploadSingleImage('banner'),
-  eventController.createEvent,
+  eventController.updateRegistrationStatus,
 );
 
-router.get(
-  '/',
-  verifyToken,
-  eventController.getAllEvents,
-);
-
+// User Hosted Events Routes (MUST BE BEFORE /:id)
 router.get(
   '/my',
   verifyToken,
@@ -57,6 +57,29 @@ router.get(
   eventController.getMyEvents,
 );
 
+router.delete(
+  '/my/all',
+  verifyToken,
+  allowRoles('ADMIN', 'ALUMNI', 'STUDENT'),
+  eventController.deleteAllMyEvents,
+);
+
+// Root Event Collection Routes
+router.post(
+  '/',
+  verifyToken,
+  allowRoles('ADMIN', 'ALUMNI', 'STUDENT'),
+  ...uploadSingleImage('banner'),
+  eventController.createEvent,
+);
+
+router.get(
+  '/',
+  verifyToken,
+  eventController.getAllEvents,
+);
+
+// Parameterized Event Routes (/:id)
 router.get(
   '/:id',
   verifyToken,

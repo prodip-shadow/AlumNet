@@ -951,64 +951,7 @@ const AlumniDashboard = () => {
         </div>
       )}
 
-      {/* Tab 3: My Events */}
-      {activeTab === 'events' && Boolean(user && (user.role === 'ADMIN' || user.canCreateEvent)) && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-foreground">My Organized Events</h3>
-              <p className="text-xs text-muted-foreground">Host meetups, webinars, and reunion events.</p>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => setIsCreateEventOpen(true)}
-              className="text-xs font-semibold gap-1.5 cursor-pointer h-8.5"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Create Event</span>
-            </Button>
-          </div>
 
-          {loadingEvents ? (
-            <div className="p-12 text-center text-xs text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
-              Loading events...
-            </div>
-          ) : myEvents.length === 0 ? (
-            <Card className="p-12 text-center text-xs text-muted-foreground border-dashed">
-              <Calendar className="h-8 w-8 mx-auto opacity-40 mb-2 text-primary" />
-              <p className="font-semibold text-foreground text-sm">No events organized yet</p>
-              <p className="mt-1">Host alumni reunions or tech webinars.</p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {myEvents.map((ev) => (
-                <Card key={ev.id} className="border border-border bg-card p-4.5 rounded-xl shadow-2xs space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h4 className="font-bold text-sm text-foreground">{ev.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        <span>{ev.location}</span>
-                      </p>
-                    </div>
-                    <Badge variant="secondary" className="text-[10px]">
-                      {new Date(ev.eventDate).toLocaleDateString()}
-                    </Badge>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground line-clamp-2">{ev.description}</p>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-border text-xs text-muted-foreground">
-                    <span>{ev.isPaid ? `Fee: ৳${ev.price}` : 'Free Event'}</span>
-                    <span>Status: {ev.status}</span>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Modal: Post New Opportunity */}
       {isCreateOppModalOpen && (
@@ -1182,69 +1125,7 @@ const AlumniDashboard = () => {
         </div>
       )}
 
-      {/* Modal: Create Event */}
-      {isCreateEventOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
-          <form onSubmit={handleCreateEvent} className="w-full max-w-lg bg-card border border-border p-6 rounded-2xl shadow-xl space-y-4">
-            <h3 className="text-base font-bold text-foreground">Create New Event</h3>
 
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-semibold block mb-1">Event Title</label>
-                <Input
-                  value={eventTitle}
-                  onChange={(e) => setEventTitle(e.target.value)}
-                  placeholder="e.g. PSTU CSE Alumni Tech Talk 2026"
-                  required
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold block mb-1">Description</label>
-                <textarea
-                  value={eventDesc}
-                  onChange={(e) => setEventDesc(e.target.value)}
-                  placeholder="Event agenda, speaker details, venue info..."
-                  className="w-full h-20 p-2.5 text-xs bg-background border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="font-semibold block mb-1">Event Date & Time</label>
-                  <Input
-                    type="datetime-local"
-                    value={eventDate}
-                    onChange={(e) => setEventDate(e.target.value)}
-                    required
-                    className="h-9 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold block mb-1">Location / Online Link</label>
-                  <Input
-                    value={eventLocation}
-                    onChange={(e) => setEventLocation(e.target.value)}
-                    placeholder="e.g. Auditorium / Zoom Link"
-                    required
-                    className="h-9 text-xs"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2 justify-end pt-2">
-              <Button variant="outline" size="sm" onClick={() => setIsCreateEventOpen(false)} className="h-9 text-xs">
-                Cancel
-              </Button>
-              <Button type="submit" size="sm" disabled={savingEvent} className="h-9 text-xs font-semibold">
-                {savingEvent ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Create Event'}
-              </Button>
-            </div>
-          </form>
-        </div>
-      )}
       {/* Tab: Projects Showcase */}
       {activeTab === 'projects' && <ProjectsSection isOwner={true} />}
 
