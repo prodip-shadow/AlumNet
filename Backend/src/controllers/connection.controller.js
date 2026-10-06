@@ -320,10 +320,10 @@ const deleteConnection = (req, res) => {
       });
     }
 
-    if (connection.status !== 'ACCEPTED') {
+    if (connection.status !== 'ACCEPTED' && connection.status !== 'PENDING') {
       return res.status(400).json({
         success: false,
-        message: 'Connection is not accepted',
+        message: 'Connection is not active',
       });
     }
 

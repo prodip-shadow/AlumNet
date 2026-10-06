@@ -61,4 +61,18 @@ router.delete(
   connectionController.deleteConnection,
 );
 
+router.delete(
+  '/:id/remove',
+  verifyToken,
+  allowRoles('STUDENT', 'ALUMNI'),
+  connectionController.deleteConnection,
+);
+
+router.delete(
+  '/:id/cancel',
+  verifyToken,
+  allowRoles('STUDENT', 'ALUMNI'),
+  connectionController.deleteConnection,
+);
+
 module.exports = router;

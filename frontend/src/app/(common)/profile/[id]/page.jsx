@@ -35,6 +35,7 @@ import {
 import { FaLinkedin, FaGithub, FaFacebook, FaWhatsapp } from 'react-icons/fa6';
 import { SiCodeforces, SiLeetcode, SiCodechef, SiHackerrank } from 'react-icons/si';
 import { toast } from 'react-toastify';
+import { confirmAlert } from '@/lib/swal';
 import ProjectsSection from '@/components/shared/ProjectsSection';
 
 export default function UserProfileDetailsPage() {
@@ -127,7 +128,15 @@ export default function UserProfileDetailsPage() {
   // Handle Disconnect (Unfriend)
   const handleDisconnect = async () => {
     if (!currentUser || disconnecting || !isConnected) return;
-    if (!confirm(`Are you sure you want to disconnect from ${profile?.name || 'this user'}?`)) return;
+
+    const confirmed = await confirmAlert({
+      title: 'Unfriend Connection?',
+      text: `Are you sure you want to unfriend / disconnect from ${profile?.name || 'this user'}?`,
+      confirmButtonText: 'Yes, Unfriend',
+      cancelButtonText: 'Cancel',
+      confirmButtonVariant: 'destructive',
+    });
+    if (!confirmed) return;
 
     setDisconnecting(true);
     try {
@@ -146,10 +155,12 @@ export default function UserProfileDetailsPage() {
         setConnectionId(null);
         toast.info(`Disconnected from ${profile?.name || 'user'}`, { autoClose: 1500 });
         fetchUserProfile();
+      } else {
+        toast.error('Connection record not found. Please refresh the page.', { autoClose: 2000 });
       }
     } catch (err) {
       console.error('Error disconnecting:', err);
-      toast.error('Failed to disconnect. Please try again.', { autoClose: 2000 });
+      toast.error(err.response?.data?.message || 'Failed to disconnect. Please try again.', { autoClose: 2000 });
     } finally {
       setDisconnecting(false);
     }

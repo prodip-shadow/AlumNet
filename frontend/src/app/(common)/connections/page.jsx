@@ -25,6 +25,7 @@ import {
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
+import { confirmAlert } from '@/lib/swal';
 
 const ConnectionsPage = () => {
   const router = useRouter();
@@ -125,11 +126,20 @@ const ConnectionsPage = () => {
 
   // Handle Cancel Outgoing
   const handleCancelOutgoing = async (reqId, targetName) => {
+    const confirmed = await confirmAlert({
+      title: 'Cancel Connection Request?',
+      text: `Are you sure you want to cancel the request sent to ${targetName || 'this user'}?`,
+      confirmButtonText: 'Yes, Cancel Request',
+      cancelButtonText: 'Keep Request',
+      confirmButtonVariant: 'destructive',
+    });
+    if (!confirmed) return;
+
     setActionLoadingId(reqId);
     try {
-      const res = await api.delete(`/api/connections/${reqId}/cancel`);
+      const res = await api.delete(`/api/connections/${reqId}`);
       if (res.data?.success) {
-        toast.info(`Cancelled request to ${targetName || 'alumni'}`, { autoClose: 1500 });
+        toast.info(`Cancelled request to ${targetName || 'user'}`, { autoClose: 1500 });
         fetchConnectionsData();
       }
     } catch (err) {
@@ -141,12 +151,20 @@ const ConnectionsPage = () => {
 
   // Handle Remove Connection (Unfriend)
   const handleRemoveConnection = async (connectionId, targetName) => {
-    if (!confirm(`Are you sure you want to remove connection with ${targetName || 'this user'}?`)) return;
+    const confirmed = await confirmAlert({
+      title: 'Remove Connection / Unfriend?',
+      text: `Are you sure you want to unfriend / remove connection with ${targetName || 'this user'}?`,
+      confirmButtonText: 'Yes, Unfriend',
+      cancelButtonText: 'Cancel',
+      confirmButtonVariant: 'destructive',
+    });
+    if (!confirmed) return;
+
     setActionLoadingId(connectionId);
     try {
-      const res = await api.delete(`/api/connections/${connectionId}/remove`);
+      const res = await api.delete(`/api/connections/${connectionId}`);
       if (res.data?.success) {
-        toast.info(`Connection removed with ${targetName || 'alumni'}`, { autoClose: 1500 });
+        toast.info(`Connection removed with ${targetName || 'user'}`, { autoClose: 1500 });
         fetchConnectionsData();
       }
     } catch (err) {
