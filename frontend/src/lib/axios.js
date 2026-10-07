@@ -26,6 +26,13 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error?.config;
 
+    if (error.response && (error.response.data?.isDeactivated || (error.response.status === 403 && error.response.data?.isDeactivated))) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:deactivated'));
+      }
+      return Promise.reject(error);
+    }
+
     if (
       error.response &&
       error.response.status === 401 &&

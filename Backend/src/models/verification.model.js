@@ -29,9 +29,18 @@ const createVerificationApplication = (data, callback) => {
 // Get Verification Application By User Id
 const getVerificationApplicationByUserId = (userId, callback) => {
   const sql = `
-    SELECT *
+    SELECT
+      verification_applications.*,
+      users.name AS userName,
+      users.email AS userEmail,
+      users.profileImageUrl AS userProfileImageUrl,
+      faculties.name AS facultyName,
+      departments.name AS departmentName
     FROM verification_applications
-    WHERE userId = ?
+    INNER JOIN users ON verification_applications.userId = users.id
+    LEFT JOIN faculties ON verification_applications.facultyId = faculties.id
+    LEFT JOIN departments ON verification_applications.departmentId = departments.id
+    WHERE verification_applications.userId = ?
   `;
 
   db.query(sql, [userId], callback);
@@ -40,10 +49,19 @@ const getVerificationApplicationByUserId = (userId, callback) => {
 // Get Pending Verification Applications
 const getPendingVerificationApplications = (callback) => {
   const sql = `
-    SELECT *
+    SELECT
+      verification_applications.*,
+      users.name AS userName,
+      users.email AS userEmail,
+      users.profileImageUrl AS userProfileImageUrl,
+      faculties.name AS facultyName,
+      departments.name AS departmentName
     FROM verification_applications
-    WHERE status = 'PENDING'
-    ORDER BY createdAt ASC
+    INNER JOIN users ON verification_applications.userId = users.id
+    LEFT JOIN faculties ON verification_applications.facultyId = faculties.id
+    LEFT JOIN departments ON verification_applications.departmentId = departments.id
+    WHERE verification_applications.status = 'PENDING'
+    ORDER BY verification_applications.createdAt ASC
   `;
 
   db.query(sql, callback);
@@ -52,9 +70,18 @@ const getPendingVerificationApplications = (callback) => {
 // Get Verification Application By Id
 const getVerificationApplicationById = (id, callback) => {
   const sql = `
-    SELECT *
+    SELECT
+      verification_applications.*,
+      users.name AS userName,
+      users.email AS userEmail,
+      users.profileImageUrl AS userProfileImageUrl,
+      faculties.name AS facultyName,
+      departments.name AS departmentName
     FROM verification_applications
-    WHERE id = ?
+    INNER JOIN users ON verification_applications.userId = users.id
+    LEFT JOIN faculties ON verification_applications.facultyId = faculties.id
+    LEFT JOIN departments ON verification_applications.departmentId = departments.id
+    WHERE verification_applications.id = ?
   `;
 
   db.query(sql, [id], callback);

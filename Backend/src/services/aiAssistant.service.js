@@ -38,11 +38,12 @@ Output:
 {"position":null,"company":null,"location":"Dhaka","skill":null,"session":"2022","project":null,"query":"Dhaka 2022"}`;
 
 const extractSearchFiltersWithOpenRouter = async (prompt, apiKey) => {
+  const referer = process.env.BACKEND_URL || process.env.FRONTEND_URL;
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'http://localhost:5000',
+      'HTTP-Referer': referer,
       'X-Title': 'AlumNet',
       'Content-Type': 'application/json',
     },

@@ -3,11 +3,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '@/lib/axios';
 import { useRouter } from 'next/navigation';
+import DeactivatedScreen from '@/components/shared/DeactivatedScreen';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [isDeactivated, setIsDeactivated] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -16,13 +18,23 @@ export function AuthProvider({ children }) {
       const response = await api.get('/api/auth/me');
       if (response.data?.success && response.data?.user) {
         setUser(response.data.user);
+        setIsDeactivated(false);
         return response.data.user;
       } else {
         setUser(null);
+        setIsDeactivated(false);
         return null;
       }
     } catch (error) {
-      setUser(null);
+      if (error.response?.data?.isDeactivated || error.response?.status === 403) {
+        setIsDeactivated(true);
+        if (error.response?.data?.user) {
+          setUser(error.response.data.user);
+        }
+      } else {
+        setUser(null);
+        setIsDeactivated(false);
+      }
       return null;
     } finally {
       setLoading(false);
@@ -36,12 +48,19 @@ export function AuthProvider({ children }) {
 
     const handleUnauthorized = () => {
       setUser(null);
+      setIsDeactivated(false);
       router.push('/login');
     };
 
+    const handleDeactivated = () => {
+      setIsDeactivated(true);
+    };
+
     window.addEventListener('auth:unauthorized', handleUnauthorized);
+    window.addEventListener('auth:deactivated', handleDeactivated);
     return () => {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
+      window.removeEventListener('auth:deactivated', handleDeactivated);
     };
   }, [fetchCurrentUser, router]);
 
@@ -52,6 +71,7 @@ export function AuthProvider({ children }) {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
+      setIsDeactivated(false);
       router.push('/login');
     }
   };
@@ -62,11 +82,13 @@ export function AuthProvider({ children }) {
         user,
         setUser,
         loading,
+        isDeactivated,
+        setIsDeactivated,
         fetchCurrentUser,
         logoutUser,
       }}
     >
-      {children}
+      {isDeactivated ? <DeactivatedScreen /> : children}
     </AuthContext.Provider>
   );
 }

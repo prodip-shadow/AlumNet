@@ -969,24 +969,32 @@ const AdminDashboard = () => {
               {verifications.map((app) => (
                 <Card key={app.id} className="border border-border bg-card p-4.5 rounded-xl shadow-2xs space-y-3.5">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm text-foreground">{app.userName || `User #${app.userId}`}</h4>
-                        <Badge
-                          variant="secondary"
-                          className={`text-[10px] font-bold ${
-                            app.applicationType === 'ALUMNI'
-                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                              : 'bg-blue-500/10 text-blue-700 dark:text-blue-300'
-                          }`}
-                        >
-                          {app.applicationType}
-                        </Badge>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 border border-border shrink-0">
+                        <AvatarImage src={app.userProfileImageUrl} alt={app.userName} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                          {app.userName ? app.userName.charAt(0).toUpperCase() : 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-bold text-sm text-foreground">{app.userName || `User #${app.userId}`}</h4>
+                          <Badge
+                            variant="secondary"
+                            className={`text-[10px] font-bold ${
+                              app.applicationType === 'ALUMNI'
+                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-blue-500/10 text-blue-700 dark:text-blue-300'
+                            }`}
+                          >
+                            {app.applicationType}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{app.userEmail || 'No email specified'}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{app.userEmail}</p>
                     </div>
 
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-muted px-2 py-0.5 rounded">
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-muted px-2 py-0.5 rounded shrink-0">
                       <Clock className="h-2.5 w-2.5" />
                       {new Date(app.createdAt).toLocaleDateString()}
                     </span>
@@ -1002,6 +1010,18 @@ const AdminDashboard = () => {
                       <span className="text-[10px] text-muted-foreground block">Reg Number:</span>
                       <span className="font-semibold">{app.registrationNumber}</span>
                     </div>
+                    {app.facultyName && (
+                      <div>
+                        <span className="text-[10px] text-muted-foreground block">Faculty:</span>
+                        <span className="font-semibold">{app.facultyName}</span>
+                      </div>
+                    )}
+                    {app.departmentName && (
+                      <div>
+                        <span className="text-[10px] text-muted-foreground block">Department:</span>
+                        <span className="font-semibold">{app.departmentName}</span>
+                      </div>
+                    )}
                     <div>
                       <span className="text-[10px] text-muted-foreground block">Session:</span>
                       <span className="font-semibold">{app.session}</span>

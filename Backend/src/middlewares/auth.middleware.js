@@ -23,10 +23,18 @@ const verifyToken = (req, res, next) => {
         });
       }
 
-      if (!result || result.length === 0 || !result[0].isActive) {
+      if (!result || result.length === 0) {
         return res.status(401).json({
           success: false,
-          message: 'User not found or inactive.',
+          message: 'User not found.',
+        });
+      }
+
+      if (!result[0].isActive) {
+        return res.status(403).json({
+          success: false,
+          isDeactivated: true,
+          message: 'Your account has been deactivated by the admin.',
         });
       }
 

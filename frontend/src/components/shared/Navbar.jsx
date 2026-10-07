@@ -329,7 +329,7 @@ const Navbar = () => {
           </button>
 
           <Link
-            href="/"
+            href={user?.role?.toUpperCase() === 'USER' ? '/dashboard' : '/'}
             className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary font-(family-name:--font-press-start) flex items-center gap-2"
           >
             <span>AlumNet</span>
@@ -338,7 +338,7 @@ const Navbar = () => {
 
         {/* Desktop Nav Links */}
         <nav className="hidden h-full items-center gap-6 lg:gap-8 md:flex">
-          {navLinks.map((nav, id) => {
+          {(user?.role?.toUpperCase() === 'USER' ? [] : navLinks).map((nav, id) => {
             const isActive = pathname === nav.href;
 
             return (
@@ -521,7 +521,7 @@ const Navbar = () => {
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden border-b border-border bg-card p-4 space-y-2 animate-in slide-in-from-top-2">
-          {navLinks.map((nav) => (
+          {(user?.role?.toUpperCase() === 'USER' ? [] : navLinks).map((nav) => (
             <Link
               key={nav.href}
               href={nav.href}

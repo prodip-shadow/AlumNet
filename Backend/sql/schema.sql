@@ -751,3 +751,7 @@ ALTER TABLE alumni_profiles MODIFY COLUMN facultyId INT DEFAULT NULL;
 ALTER TABLE verification_applications ADD CONSTRAINT fk_va_faculty FOREIGN KEY (facultyId) REFERENCES faculties(id) ON DELETE SET NULL, ADD CONSTRAINT fk_va_department FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;
 ALTER TABLE student_profiles ADD CONSTRAINT fk_sp_faculty FOREIGN KEY (facultyId) REFERENCES faculties(id) ON DELETE SET NULL, ADD CONSTRAINT fk_sp_department FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;
 ALTER TABLE alumni_profiles ADD CONSTRAINT fk_ap_faculty FOREIGN KEY (facultyId) REFERENCES faculties(id) ON DELETE SET NULL, ADD CONSTRAINT fk_ap_department FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;
+
+-- 2FA and Reset Password Columns
+ALTER TABLE users ADD COLUMN isTwoFactorEnabled BOOLEAN DEFAULT FALSE, ADD COLUMN twoFactorCode VARCHAR(10) DEFAULT NULL, ADD COLUMN twoFactorExpiresAt DATETIME DEFAULT NULL;
+ALTER TABLE users ADD COLUMN resetCode VARCHAR(10) DEFAULT NULL, ADD COLUMN resetExpiresAt DATETIME DEFAULT NULL;

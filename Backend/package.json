@@ -21,6 +21,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
     "mysql2": "^3.23.2",
+    "nodemailer": "^10.0.15",
     "socket.io": "^4.8.3",
     "streamifier": "^0.1.1",
     "stripe": "^22.4.0"
