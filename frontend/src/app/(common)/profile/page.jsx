@@ -45,16 +45,33 @@ export default function ProfilePage() {
   const [departments, setDepartments] = useState([]);
   const [facultyId, setFacultyId] = useState('');
   const [departmentId, setDepartmentId] = useState('');
+  const [session, setSession] = useState('');
+  const [currentSemester, setCurrentSemester] = useState('');
+  const [graduationYear, setGraduationYear] = useState('');
 
   // Form State
   const [name, setName] = useState('');
+  const [district, setDistrict] = useState('');
   const [bio, setBio] = useState('');
+  const [careerInterests, setCareerInterests] = useState('');
   const [currentPosition, setCurrentPosition] = useState('');
   const [currentCompany, setCurrentCompany] = useState('');
   const [currentLocation, setCurrentLocation] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+
+  // Links State
   const [githubLink, setGithubLink] = useState('');
   const [linkedinLink, setLinkedinLink] = useState('');
+  const [facebookLink, setFacebookLink] = useState('');
   const [portfolioLink, setPortfolioLink] = useState('');
+
+  // CP Links State (Students)
+  const [codeforcesLink, setCodeforcesLink] = useState('');
+  const [codechefLink, setCodechefLink] = useState('');
+  const [leetcodeLink, setLeetcodeLink] = useState('');
+  const [hackerrankLink, setHackerrankLink] = useState('');
+
   const [selectedSkillIds, setSelectedSkillIds] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -80,15 +97,27 @@ export default function ProfilePage() {
         const p = profRes.value.data.profile || {};
         setProfile(p);
         if (p.name) setName(p.name);
+        setDistrict(p.district || '');
         setFacultyId(p.facultyId ? String(p.facultyId) : '');
         setDepartmentId(p.departmentId ? String(p.departmentId) : '');
+        setSession(p.session || '');
+        setCurrentSemester(p.currentSemester || '');
+        setGraduationYear(p.graduationYear || p.expectedGraduationYear || '');
         setBio(p.bio || '');
+        setCareerInterests(p.careerInterests || '');
         setCurrentPosition(p.currentPosition || '');
         setCurrentCompany(p.currentCompany || '');
         setCurrentLocation(p.currentLocation || '');
+        setContactEmail(p.contactEmail || '');
+        setWhatsappNumber(p.whatsappNumber || '');
         setGithubLink(p.githubLink || '');
         setLinkedinLink(p.linkedinLink || '');
+        setFacebookLink(p.facebookLink || '');
         setPortfolioLink(p.portfolioLink || p.personalWebsite || '');
+        setCodeforcesLink(p.codeforcesLink || '');
+        setCodechefLink(p.codechefLink || '');
+        setLeetcodeLink(p.leetcodeLink || '');
+        setHackerrankLink(p.hackerrankLink || '');
 
         const userSkills = profRes.value.data.skills || [];
         setSkills(userSkills);
@@ -157,16 +186,29 @@ export default function ProfilePage() {
     try {
       const payload = {
         name: name.trim(),
+        district: district.trim(),
         facultyId: facultyId ? Number(facultyId) : null,
         departmentId: departmentId ? Number(departmentId) : null,
+        session: session.trim(),
+        currentSemester: currentSemester.trim(),
+        expectedGraduationYear: graduationYear ? Number(graduationYear) : null,
+        graduationYear: graduationYear ? Number(graduationYear) : null,
         bio,
+        careerInterests,
         currentPosition,
         currentCompany,
         currentLocation,
+        contactEmail: contactEmail.trim(),
+        whatsappNumber: whatsappNumber.trim(),
         githubLink,
         linkedinLink,
+        facebookLink,
         personalWebsite: portfolioLink,
         portfolioLink,
+        codeforcesLink,
+        codechefLink,
+        leetcodeLink,
+        hackerrankLink,
         skills: Array.isArray(selectedSkillIds)
           ? selectedSkillIds
               .filter((id) => Number.isInteger(Number(id)) && Number(id) > 0)
@@ -369,14 +411,14 @@ export default function ProfilePage() {
 
       {/* Edit Profile Form */}
       <form onSubmit={handleSave} className="space-y-6">
-        {/* Academic Information (Faculty & Department) Card */}
+        {/* Academic Information (Faculty, Department, Session, Semester, Year) Card */}
         <Card className="border border-border bg-card p-5 sm:p-6 rounded-2xl shadow-2xs space-y-4">
           <div className="border-b border-border pb-3">
             <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
               <GraduationCap className="h-4 w-4 text-primary" />
               <span>Academic Information</span>
             </h3>
-            <p className="text-xs text-muted-foreground">Select your Faculty and Department.</p>
+            <p className="text-xs text-muted-foreground">Manage your Faculty, Department, Session & Graduation details.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
@@ -421,25 +463,83 @@ export default function ProfilePage() {
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className="font-semibold block mb-1">Session</label>
+              <Input
+                value={session}
+                onChange={(e) => setSession(e.target.value)}
+                placeholder="e.g. 2020-2021"
+                className="h-9 text-xs"
+              />
+            </div>
+
+            {role === 'STUDENT' ? (
+              <>
+                <div>
+                  <label className="font-semibold block mb-1">Current Semester</label>
+                  <Input
+                    value={currentSemester}
+                    onChange={(e) => setCurrentSemester(e.target.value)}
+                    placeholder="e.g. 8th Semester"
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1">Expected Graduation Year</label>
+                  <Input
+                    type="number"
+                    value={graduationYear}
+                    onChange={(e) => setGraduationYear(e.target.value)}
+                    placeholder="e.g. 2025"
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="font-semibold block mb-1">Graduation Year</label>
+                <Input
+                  type="number"
+                  value={graduationYear}
+                  onChange={(e) => setGraduationYear(e.target.value)}
+                  placeholder="e.g. 2023"
+                  className="h-9 text-xs"
+                />
+              </div>
+            )}
           </div>
         </Card>
 
+        {/* Personal & Professional Info Card */}
         <Card className="border border-border bg-card p-5 sm:p-6 rounded-2xl shadow-2xs space-y-4">
           <div className="border-b border-border pb-3">
             <h3 className="font-bold text-sm text-foreground">Personal & Professional Info</h3>
-            <p className="text-xs text-muted-foreground">Keep your profile details up-to-date.</p>
+            <p className="text-xs text-muted-foreground">Keep your name, home district, and bio updated.</p>
           </div>
 
           <div className="space-y-3.5 text-xs">
-            <div>
-              <label className="font-semibold block mb-1">Full Name</label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name"
-                className="h-9 text-xs"
-                required
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className="font-semibold block mb-1">Full Name</label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your full name"
+                  className="h-9 text-xs"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">Home District</label>
+                <Input
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  placeholder="e.g. Patuakhali, Dhaka, Barishal"
+                  className="h-9 text-xs"
+                />
+              </div>
             </div>
 
             <div>
@@ -453,41 +553,91 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {role === 'ALUMNI' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="font-semibold block mb-1">Job Title / Position</label>
+                  <Input
+                    value={currentPosition}
+                    onChange={(e) => setCurrentPosition(e.target.value)}
+                    placeholder="e.g. Software Engineer"
+                    className="h-9 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold block mb-1">Company / Organization</label>
+                  <Input
+                    value={currentCompany}
+                    onChange={(e) => setCurrentCompany(e.target.value)}
+                    placeholder="e.g. Tech Corp"
+                    className="h-9 text-xs"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="font-semibold block mb-1">Current City / Location</label>
+                  <Input
+                    value={currentLocation}
+                    onChange={(e) => setCurrentLocation(e.target.value)}
+                    placeholder="e.g. Dhaka, Bangladesh"
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </div>
+            )}
+
+            {role === 'STUDENT' && (
               <div>
-                <label className="font-semibold block mb-1">Job Title / Position</label>
+                <label className="font-semibold block mb-1">Career Interests</label>
                 <Input
-                  value={currentPosition}
-                  onChange={(e) => setCurrentPosition(e.target.value)}
-                  placeholder="e.g. Software Engineer"
+                  value={careerInterests}
+                  onChange={(e) => setCareerInterests(e.target.value)}
+                  placeholder="e.g. Full Stack Development, Data Science, Competitive Programming"
+                  className="h-9 text-xs"
+                />
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Contact Information (Email & Phone / WhatsApp) */}
+        {role === 'ALUMNI' && (
+          <Card className="border border-border bg-card p-5 sm:p-6 rounded-2xl shadow-2xs space-y-4">
+            <div className="border-b border-border pb-3">
+              <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                <Mail className="h-4 w-4 text-primary" />
+                <span>Direct Contact Info</span>
+              </h3>
+              <p className="text-xs text-muted-foreground">Your contact info can be made private to friends from your Alumni Dashboard.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+              <div>
+                <label className="font-semibold block mb-1">Contact Email</label>
+                <Input
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  placeholder="e.g. yourname@example.com"
                   className="h-9 text-xs"
                 />
               </div>
 
               <div>
-                <label className="font-semibold block mb-1">Company / Organization</label>
+                <label className="font-semibold block mb-1">WhatsApp / Phone Number</label>
                 <Input
-                  value={currentCompany}
-                  onChange={(e) => setCurrentCompany(e.target.value)}
-                  placeholder="e.g. Tech Corp"
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="font-semibold block mb-1">Location / City</label>
-                <Input
-                  value={currentLocation}
-                  onChange={(e) => setCurrentLocation(e.target.value)}
-                  placeholder="e.g. Dhaka, Bangladesh"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  placeholder="e.g. +8801700000000"
                   className="h-9 text-xs"
                 />
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
-        {/* Social Links */}
+        {/* Social Links & Coding Handles */}
         <Card className="border border-border bg-card p-5 sm:p-6 rounded-2xl shadow-2xs space-y-4">
           <div className="border-b border-border pb-3">
             <h3 className="font-bold text-sm text-foreground">Social & Portfolio Links</h3>
@@ -497,7 +647,7 @@ export default function ProfilePage() {
             <div>
               <label className="font-semibold block mb-1 flex items-center gap-1.5">
                 <FaLinkedin className="h-3.5 w-3.5 text-primary" />
-                <span>LinkedIn</span>
+                <span>LinkedIn Profile</span>
               </label>
               <Input
                 value={linkedinLink}
@@ -510,7 +660,7 @@ export default function ProfilePage() {
             <div>
               <label className="font-semibold block mb-1 flex items-center gap-1.5">
                 <FaGithub className="h-3.5 w-3.5" />
-                <span>GitHub</span>
+                <span>GitHub Profile</span>
               </label>
               <Input
                 value={githubLink}
@@ -520,10 +670,10 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="font-semibold block mb-1 flex items-center gap-1.5">
                 <Globe className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Personal Website</span>
+                <span>Personal Website / Portfolio</span>
               </label>
               <Input
                 value={portfolioLink}
@@ -532,6 +682,60 @@ export default function ProfilePage() {
                 className="h-9 text-xs"
               />
             </div>
+
+            <div>
+              <label className="font-semibold block mb-1 flex items-center gap-1.5">
+                <Code2 className="h-3.5 w-3.5 text-blue-600" />
+                <span>Facebook Profile</span>
+              </label>
+              <Input
+                value={facebookLink}
+                onChange={(e) => setFacebookLink(e.target.value)}
+                placeholder="https://facebook.com/..."
+                className="h-9 text-xs"
+              />
+            </div>
+
+            {role === 'STUDENT' && (
+              <>
+                <div>
+                  <label className="font-semibold block mb-1">Codeforces Handle / Link</label>
+                  <Input
+                    value={codeforcesLink}
+                    onChange={(e) => setCodeforcesLink(e.target.value)}
+                    placeholder="e.g. handle or profile link"
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1">LeetCode Handle / Link</label>
+                  <Input
+                    value={leetcodeLink}
+                    onChange={(e) => setLeetcodeLink(e.target.value)}
+                    placeholder="e.g. handle or profile link"
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1">CodeChef Handle / Link</label>
+                  <Input
+                    value={codechefLink}
+                    onChange={(e) => setCodechefLink(e.target.value)}
+                    placeholder="e.g. handle or profile link"
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1">HackerRank Handle / Link</label>
+                  <Input
+                    value={hackerrankLink}
+                    onChange={(e) => setHackerrankLink(e.target.value)}
+                    placeholder="e.g. handle or profile link"
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </Card>
 

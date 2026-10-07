@@ -199,8 +199,12 @@ const updateMyProfile = (req, res) => {
 
   if (user.role === 'STUDENT') {
     const {
+      district,
       facultyId,
       departmentId,
+      session,
+      currentSemester,
+      expectedGraduationYear,
       bio,
       careerInterests,
       githubLink,
@@ -214,8 +218,12 @@ const updateMyProfile = (req, res) => {
       skills,
     } = req.body;
 
+    const cleanDistrict = district?.trim() || null;
     const cleanFacultyId = facultyId ? Number(facultyId) : null;
     const cleanDepartmentId = departmentId ? Number(departmentId) : null;
+    const cleanSession = session?.trim() || null;
+    const cleanCurrentSemester = currentSemester?.trim() || null;
+    const cleanExpectedGraduationYear = expectedGraduationYear ? Number(expectedGraduationYear) : null;
     const cleanGithubLink = githubLink?.trim() || null;
     const cleanLinkedinLink = linkedinLink?.trim() || null;
     const cleanFacebookLink = facebookLink?.trim() || null;
@@ -230,8 +238,12 @@ const updateMyProfile = (req, res) => {
       profileModel.updateStudentProfile(
         user.id,
         [
+          cleanDistrict,
           cleanFacultyId,
           cleanDepartmentId,
+          cleanSession,
+          cleanCurrentSemester,
+          cleanExpectedGraduationYear,
           bio,
           careerInterests,
           cleanGithubLink,
@@ -268,8 +280,11 @@ const updateMyProfile = (req, res) => {
 
   if (user.role === 'ALUMNI') {
     const {
+      district,
       facultyId,
       departmentId,
+      session,
+      graduationYear,
       bio,
       currentPosition,
       currentCompany,
@@ -285,8 +300,11 @@ const updateMyProfile = (req, res) => {
       skills,
     } = req.body;
 
+    const cleanDistrict = district?.trim() || null;
     const cleanFacultyId = facultyId ? Number(facultyId) : null;
     const cleanDepartmentId = departmentId ? Number(departmentId) : null;
+    const cleanSession = session?.trim() || null;
+    const cleanGraduationYear = graduationYear ? Number(graduationYear) : null;
     const cleanGithubLink = githubLink?.trim() || null;
     const cleanLinkedinLink = linkedinLink?.trim() || null;
     const cleanFacebookLink = facebookLink?.trim() || null;
@@ -301,8 +319,11 @@ const updateMyProfile = (req, res) => {
       profileModel.updateAlumniProfile(
         user.id,
         [
+          cleanDistrict,
           cleanFacultyId,
           cleanDepartmentId,
+          cleanSession,
+          cleanGraduationYear,
           bio,
           cleanCurrentPosition,
           cleanCurrentCompany,

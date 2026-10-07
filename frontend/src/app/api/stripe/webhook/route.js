@@ -28,7 +28,7 @@ export async function POST(req) {
 
     // Forward raw request to Express Backend (port 5000) for MySQL DB updates and Notifications
     const backendUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      process.env.NEXT_PUBLIC_API_URL;
     const res = await fetch(`${backendUrl}/api/stripe/webhook`, {
       method: 'POST',
       headers: {

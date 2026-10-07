@@ -85,8 +85,12 @@ const updateStudentProfile = (userId, data, callback) => {
   const sql = `
     UPDATE student_profiles
     SET
+      district = COALESCE(?, district),
       facultyId = ?,
       departmentId = ?,
+      session = COALESCE(?, session),
+      currentSemester = COALESCE(?, currentSemester),
+      expectedGraduationYear = ?,
       bio = ?,
       careerInterests = ?,
       githubLink = ?,
@@ -109,8 +113,11 @@ const updateAlumniProfile = (userId, data, callback) => {
   const sql = `
     UPDATE alumni_profiles
     SET
+      district = COALESCE(?, district),
       facultyId = ?,
       departmentId = ?,
+      session = COALESCE(?, session),
+      graduationYear = COALESCE(?, graduationYear),
       bio = ?,
       currentPosition = ?,
       currentCompany = ?,

@@ -59,6 +59,13 @@ const AlumniDashboard = () => {
 
   // Form Profile State
   const [name, setName] = useState('');
+  const [district, setDistrict] = useState('');
+  const [faculties, setFaculties] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [facultyId, setFacultyId] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [session, setSession] = useState('');
+  const [graduationYear, setGraduationYear] = useState('');
   const [bio, setBio] = useState('');
   const [currentPosition, setCurrentPosition] = useState('');
   const [currentCompany, setCurrentCompany] = useState('');
@@ -112,15 +119,22 @@ const AlumniDashboard = () => {
     setLoadingProfile(true);
     if (user?.name) setName(user.name);
     try {
-      const [profRes, skillsRes] = await Promise.allSettled([
+      const [profRes, skillsRes, facRes, deptRes] = await Promise.allSettled([
         api.get('/api/profile/me'),
         api.get('/api/skills'),
+        api.get('/api/faculties'),
+        api.get('/api/departments'),
       ]);
 
       if (profRes.status === 'fulfilled' && profRes.value.data?.success) {
         const p = profRes.value.data.profile || {};
         setProfile(p);
         if (p.name) setName(p.name);
+        setDistrict(p.district || '');
+        setFacultyId(p.facultyId ? String(p.facultyId) : '');
+        setDepartmentId(p.departmentId ? String(p.departmentId) : '');
+        setSession(p.session || '');
+        setGraduationYear(p.graduationYear ? String(p.graduationYear) : '');
         setBio(p.bio || '');
         setCurrentPosition(p.currentPosition || '');
         setCurrentCompany(p.currentCompany || '');
@@ -152,12 +166,23 @@ const AlumniDashboard = () => {
       if (skillsRes.status === 'fulfilled' && skillsRes.value.data?.success) {
         setAllSkills(skillsRes.value.data.skills || []);
       }
+      if (facRes.status === 'fulfilled' && facRes.value.data?.success) {
+        setFaculties(facRes.value.data.faculties || []);
+      }
+      if (deptRes.status === 'fulfilled' && deptRes.value.data?.success) {
+        setDepartments(deptRes.value.data.departments || []);
+      }
     } catch (err) {
       console.warn('Error fetching profile:', err);
     } finally {
       setLoadingProfile(false);
     }
   }, [user]);
+
+  // Filtered Departments based on selected faculty
+  const filteredDepartments = facultyId
+    ? departments.filter((d) => Number(d.facultyId) === Number(facultyId))
+    : [];
 
   // Handle Profile Picture Upload
   const handlePictureChange = async (e) => {
@@ -242,6 +267,11 @@ const AlumniDashboard = () => {
     try {
       const payload = {
         name: name.trim(),
+        district: district.trim(),
+        facultyId: facultyId ? Number(facultyId) : null,
+        departmentId: departmentId ? Number(departmentId) : null,
+        session: session.trim(),
+        graduationYear: graduationYear ? Number(graduationYear) : null,
         bio,
         currentPosition,
         currentCompany,
@@ -575,22 +605,110 @@ const AlumniDashboard = () => {
             </div>
           </Card>
 
+          {/* Academic Information Card */}
+          <Card className="border border-border bg-card p-5 sm:p-6 rounded-2xl shadow-2xs space-y-4">
+            <div className="border-b border-border pb-3">
+              <h4 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                <Building className="h-4 w-4 text-primary" />
+                <span>Academic Information</span>
+              </h4>
+              <p className="text-xs text-muted-foreground">Update your Faculty, Department, Session and Graduation Year.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+              <div>
+                <label className="font-semibold text-foreground block mb-1">Faculty</label>
+                <select
+                  value={facultyId}
+                  onChange={(e) => {
+                    setFacultyId(e.target.value);
+                    setDepartmentId('');
+                  }}
+                  className="w-full h-9 px-3 text-xs bg-background border border-border rounded-xl text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">-- Select Faculty --</option>
+                  {faculties.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-foreground block mb-1">Department</label>
+                <select
+                  value={departmentId}
+                  onChange={(e) => setDepartmentId(e.target.value)}
+                  disabled={!facultyId || filteredDepartments.length === 0}
+                  className="w-full h-9 px-3 text-xs bg-background border border-border rounded-xl text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {!facultyId
+                      ? '-- Select Faculty First --'
+                      : filteredDepartments.length === 0
+                      ? '-- No Departments Available --'
+                      : '-- Select Department --'}
+                  </option>
+                  {filteredDepartments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-foreground block mb-1">Session</label>
+                <Input
+                  value={session}
+                  onChange={(e) => setSession(e.target.value)}
+                  placeholder="e.g. 2018-2019"
+                  className="h-9 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-foreground block mb-1">Graduation Year</label>
+                <Input
+                  type="number"
+                  value={graduationYear}
+                  onChange={(e) => setGraduationYear(e.target.value)}
+                  placeholder="e.g. 2023"
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+          </Card>
+
           <Card className="border border-border bg-card p-5 sm:p-6 rounded-2xl shadow-2xs space-y-4.5">
             <div className="border-b border-border pb-3">
               <h4 className="font-bold text-sm text-foreground">Professional & Bio Details</h4>
-              <p className="text-xs text-muted-foreground">Share your name, current role, company, and career bio with the network.</p>
+              <p className="text-xs text-muted-foreground">Share your name, home district, current role, company, and career bio.</p>
             </div>
 
             <div className="space-y-3.5 text-xs">
-              <div>
-                <label className="font-semibold text-foreground block mb-1">Full Name</label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your full name"
-                  className="h-9 text-xs"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="font-semibold text-foreground block mb-1">Full Name</label>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your full name"
+                    className="h-9 text-xs"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-foreground block mb-1">Home District</label>
+                  <Input
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                    placeholder="e.g. Patuakhali, Dhaka, Barishal"
+                    className="h-9 text-xs"
+                  />
+                </div>
               </div>
 
               <div>
@@ -746,10 +864,10 @@ const AlumniDashboard = () => {
                 <div>
                   <span className="font-bold text-xs text-foreground block flex items-center gap-1.5">
                     <Lock className="h-3.5 w-3.5 text-primary" />
-                    <span>Privacy & Friends-Only Settings</span>
+                    <span>Contact Privacy & Friends-Only Settings</span>
                   </span>
                   <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                    Check the items below that you wish to keep <strong>Private (Visible only to your Accepted Friends/Connections)</strong>. Unchecked items remain public to all visitors.
+                    Select the contact methods below that you wish to keep <strong>Friends Only (Visible only to your Accepted Connections)</strong>. Unselected items remain <strong>Public</strong> to all visitors.
                   </p>
                 </div>
 
@@ -761,8 +879,6 @@ const AlumniDashboard = () => {
                     { id: 'github', label: 'GitHub Profile', icon: FaGithub },
                     { id: 'facebook', label: 'Facebook Profile', icon: FaFacebook },
                     { id: 'website', label: 'Personal Website / Portfolio', icon: Globe },
-                    { id: 'location', label: 'Current City & Location', icon: MapPin },
-                    { id: 'bio', label: 'About Me & Bio Summary', icon: User },
                   ].map((item) => {
                     const isChecked = visibleContactMethods.includes(item.id);
                     const Icon = item.icon;

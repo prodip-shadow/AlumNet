@@ -62,11 +62,15 @@ const getAlumniProfileById = (req, res) => {
 
       alumniProfile.skills = skills;
 
-      // Check if current user is the alumni themselves
-      if (Number(currentUserId) === Number(userId)) {
+      // Check if current user is the alumni themselves or ADMIN
+      const isSelf = Number(currentUserId) === Number(userId);
+      const isAdmin = req.user?.role === 'ADMIN';
+
+      if (isSelf || isAdmin) {
         return res.status(200).json({
           success: true,
           profile: alumniProfile,
+          isConnected: true,
         });
       }
 
@@ -81,12 +85,26 @@ const getAlumniProfileById = (req, res) => {
 
         const isConnected = connectionResult.length > 0;
 
-        // If not connected, strip private contact information
+        // If not connected, strip contact information marked as Friends Only
         if (!isConnected) {
-          delete alumniProfile.contactEmail;
-          delete alumniProfile.whatsappNumber;
-          delete alumniProfile.preferredContactMethod;
-          delete alumniProfile.visibleContactMethods;
+          let visMethods = [];
+          if (alumniProfile.visibleContactMethods) {
+            try {
+              visMethods = typeof alumniProfile.visibleContactMethods === 'string'
+                ? JSON.parse(alumniProfile.visibleContactMethods)
+                : alumniProfile.visibleContactMethods;
+            } catch (e) {
+              visMethods = [];
+            }
+          }
+          if (!Array.isArray(visMethods)) visMethods = [];
+
+          if (visMethods.includes('email')) delete alumniProfile.contactEmail;
+          if (visMethods.includes('whatsapp')) delete alumniProfile.whatsappNumber;
+          if (visMethods.includes('linkedin')) delete alumniProfile.linkedinLink;
+          if (visMethods.includes('github')) delete alumniProfile.githubLink;
+          if (visMethods.includes('facebook')) delete alumniProfile.facebookLink;
+          if (visMethods.includes('website')) delete alumniProfile.personalWebsite;
         }
 
         return res.status(200).json({
