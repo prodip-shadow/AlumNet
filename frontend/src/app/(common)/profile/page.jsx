@@ -560,7 +560,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="font-semibold block mb-1">Home District (জেলা)</label>
+                  <label className="font-semibold block mb-1">Home District</label>
                   <Input
                     type="text"
                     value={district}

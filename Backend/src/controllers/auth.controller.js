@@ -15,12 +15,18 @@ const {
   resetFailedAttempts,
 } = require('../middlewares/rateLimit.middleware');
 
-const getCookieOptions = (maxAge) => ({
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  maxAge,
-});
+const getCookieOptions = (req, maxAge) => {
+  const isHttps = req ? (req.secure || req.headers['x-forwarded-proto'] === 'https') : false;
+  const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.RAILWAY_ENVIRONMENT) || Boolean(process.env.RAILWAY_STATIC_URL) || isHttps;
+
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/',
+    maxAge,
+  };
+};
 
 const register = async (req, res) => {
   try {
@@ -179,8 +185,8 @@ const login = async (req, res) => {
         });
       }
 
-      res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
-      res.cookie('refreshToken', refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
+      res.cookie('accessToken', accessToken, getCookieOptions(req, 15 * 60 * 1000));
+      res.cookie('refreshToken', refreshToken, getCookieOptions(req, 7 * 24 * 60 * 60 * 1000));
 
       logSecurityEvent('LOGIN_SUCCESS', {
         email: user.email,
@@ -275,8 +281,8 @@ const verify2FA = async (req, res) => {
       userModel.saveRefreshToken(user.id, refreshToken, expiresAt, (rfErr) => {
         if (rfErr) return res.status(500).json({ success: false, message: 'Server Error' });
 
-        res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
-        res.cookie('refreshToken', refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
+        res.cookie('accessToken', accessToken, getCookieOptions(req, 15 * 60 * 1000));
+        res.cookie('refreshToken', refreshToken, getCookieOptions(req, 7 * 24 * 60 * 60 * 1000));
 
         logSecurityEvent('2FA_VERIFICATION_SUCCESS', {
           email: user.email,
@@ -694,7 +700,7 @@ const me = (req, res) => {
 
     // Refresh accessToken cookie if role changed
     const freshAccessToken = generateAccessToken(user);
-    res.cookie('accessToken', freshAccessToken, getCookieOptions(15 * 60 * 1000));
+    res.cookie('accessToken', freshAccessToken, getCookieOptions(req, 15 * 60 * 1000));
 
     const sendResponse = (canCreateEvent) => {
       return res.status(200).json({
@@ -761,7 +767,7 @@ const refreshToken = (req, res) => {
         role: result[0].role,
       });
 
-      res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
+      res.cookie('accessToken', accessToken, getCookieOptions(req, 15 * 60 * 1000));
 
       return res.status(200).json({
         success: true,
@@ -782,6 +788,9 @@ const refreshToken = (req, res) => {
 };
 
 const logout = (req, res) => {
+  const clearOpts = getCookieOptions(req, 0);
+  clearOpts.expires = new Date(0);
+
   userModel.clearRefreshToken(req.user.id, (err) => {
     if (err) {
       return res.status(500).json({
@@ -790,8 +799,10 @@ const logout = (req, res) => {
       });
     }
 
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    res.cookie('accessToken', '', clearOpts);
+    res.cookie('refreshToken', '', clearOpts);
+    res.clearCookie('accessToken', clearOpts);
+    res.clearCookie('refreshToken', clearOpts);
 
     logSecurityEvent('LOGOUT_SUCCESS', {
       userId: req.user.id,

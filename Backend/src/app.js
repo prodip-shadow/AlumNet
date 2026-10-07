@@ -42,9 +42,24 @@ app.use(
   })
 );
 
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))
+  : ['http://localhost:3000', 'http://localhost:3001'];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const cleanOrigin = origin.replace(/\/$/, '');
+      const isAllowed = allowedOrigins.includes(cleanOrigin);
+      const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin);
+
+      if (isAllowed || isLocalhost || process.env.NODE_ENV !== 'production') {
+        return callback(null, cleanOrigin);
+      }
+
+      return callback(null, cleanOrigin);
+    },
     credentials: true,
   }),
 );

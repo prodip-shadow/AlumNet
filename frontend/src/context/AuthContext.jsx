@@ -34,12 +34,20 @@ export function AuthProvider({ children }) {
       } else {
         setUser(null);
         setIsDeactivated(false);
+        if (typeof window !== 'undefined') {
+          const authPages = ['/login', '/register', '/forgot-password'];
+          const currentPath = window.location.pathname;
+          const isAuthPage = authPages.some((p) => currentPath === p || currentPath.startsWith(p));
+          if (!isAuthPage) {
+            router.push('/login');
+          }
+        }
       }
       return null;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -50,10 +58,10 @@ export function AuthProvider({ children }) {
       setUser(null);
       setIsDeactivated(false);
       if (typeof window !== 'undefined') {
-        const publicPaths = ['/', '/login', '/register', '/forgot-password', '/alumni', '/events', '/opportunities'];
+        const authPages = ['/login', '/register', '/forgot-password'];
         const currentPath = window.location.pathname;
-        const isPublic = publicPaths.some((p) => currentPath === p || currentPath.startsWith(p));
-        if (!isPublic) {
+        const isAuthPage = authPages.some((p) => currentPath === p || currentPath.startsWith(p));
+        if (!isAuthPage) {
           router.push('/login');
         }
       }

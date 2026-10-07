@@ -65,8 +65,14 @@ api.interceptors.response.use(
             localStorage.removeItem('user');
           } catch (e) {}
           window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+          const authPages = ['/login', '/register', '/forgot-password'];
+          const currentPath = window.location.pathname;
+          const isAuthPage = authPages.some((p) => currentPath === p || currentPath.startsWith(p));
+          if (!isAuthPage) {
+            window.location.href = '/login';
+          }
         }
-        return Promise.reject(error);
+        return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
