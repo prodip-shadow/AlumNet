@@ -51,7 +51,6 @@ const send2FACode = async (toEmail, code) => {
         subject: `${code} is your AlumNet 2FA Verification Code`,
         html: htmlContent,
       });
-      console.log(`[Email Service] 2FA verification email sent to ${toEmail}`);
     } catch (err) {
       console.error(`[Email Service Error] Failed to send email to ${toEmail}:`, err.message);
       console.log(`[Email Service Fallback] 2FA Code for ${toEmail}: [ ${code} ] (Valid for 5 mins)`);
