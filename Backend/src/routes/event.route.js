@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const eventController = require('../controllers/event.controller');
-const { verifyToken } = require('../middlewares/auth.middleware');
+const { verifyToken, optionalVerifyToken } = require('../middlewares/auth.middleware');
 const { allowRoles } = require('../middlewares/role.middleware');
 const { uploadSingleImage } = require('../middlewares/upload.middleware');
 
@@ -75,14 +75,14 @@ router.post(
 
 router.get(
   '/',
-  verifyToken,
+  optionalVerifyToken,
   eventController.getAllEvents,
 );
 
 // Parameterized Event Routes (/:id)
 router.get(
   '/:id',
-  verifyToken,
+  optionalVerifyToken,
   eventController.getEventById,
 );
 

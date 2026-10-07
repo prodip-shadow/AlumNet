@@ -1,14 +1,26 @@
-
 const bcrypt = require('bcryptjs');
 const userModel = require('../models/user.model');
 const eventModel = require('../models/event.model');
 const jwt = require('jsonwebtoken');
 const emailService = require('../services/email.service');
+const { logSecurityEvent, getClientIp } = require('../services/securityLog.service');
 
 const {
   generateAccessToken,
   generateRefreshToken,
 } = require('../services/token.service');
+
+const {
+  recordFailedAttempt,
+  resetFailedAttempts,
+} = require('../middlewares/rateLimit.middleware');
+
+const getCookieOptions = (maxAge) => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  maxAge,
+});
 
 const register = async (req, res) => {
   try {
@@ -37,7 +49,6 @@ const register = async (req, res) => {
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-
       const profileImageUrl = req.uploadedImageUrl || null;
 
       userModel.createUser(
@@ -49,6 +60,13 @@ const register = async (req, res) => {
               message: 'Server Error',
             });
           }
+
+          logSecurityEvent('USER_REGISTERED', {
+            email,
+            ip: getClientIp(req),
+            status: 'SUCCESS',
+            message: 'New user account registered successfully',
+          });
 
           return res.status(201).json({
             success: true,
@@ -68,6 +86,13 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email and password are required',
+    });
+  }
+
   userModel.getUserByEmail(email, async (err, result) => {
     if (err) {
       return res.status(500).json({
@@ -76,10 +101,12 @@ const login = async (req, res) => {
       });
     }
 
+    // Mitigation for Account Enumeration & Brute Force
     if (result.length === 0) {
-      return res.status(404).json({
+      recordFailedAttempt(email, getClientIp(req));
+      return res.status(401).json({
         success: false,
-        message: 'User not found',
+        message: 'Invalid email or password',
       });
     }
 
@@ -87,19 +114,30 @@ const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
+      recordFailedAttempt(email, getClientIp(req));
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials',
+        message: 'Invalid email or password',
       });
     }
 
     if (!user.isActive) {
+      logSecurityEvent('LOGIN_REJECTED_DEACTIVATED', {
+        email: user.email,
+        userId: user.id,
+        ip: getClientIp(req),
+        status: 'BLOCKED',
+        message: 'Attempted login to deactivated account',
+      });
       return res.status(403).json({
         success: false,
         isDeactivated: true,
         message: 'Your account has been deactivated by the admin.',
       });
     }
+
+    // Reset failed attempts on valid password check
+    resetFailedAttempts(email);
 
     // Check if 2FA is enabled for this account
     if (user.isTwoFactorEnabled) {
@@ -111,6 +149,13 @@ const login = async (req, res) => {
           return res.status(500).json({ success: false, message: 'Server Error' });
         }
         await emailService.send2FACode(user.email, code);
+        logSecurityEvent('2FA_CODE_GENERATED', {
+          email: user.email,
+          userId: user.id,
+          ip: getClientIp(req),
+          status: 'SUCCESS',
+          message: '2FA code generated and emailed to user',
+        });
         return res.status(200).json({
           success: true,
           requires2FA: true,
@@ -124,7 +169,6 @@ const login = async (req, res) => {
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
-
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     userModel.saveRefreshToken(user.id, refreshToken, expiresAt, (err) => {
@@ -135,18 +179,15 @@ const login = async (req, res) => {
         });
       }
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        maxAge: 15 * 60 * 1000,
-      });
+      res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
+      res.cookie('refreshToken', refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
 
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+      logSecurityEvent('LOGIN_SUCCESS', {
+        email: user.email,
+        userId: user.id,
+        ip: getClientIp(req),
+        status: 'SUCCESS',
+        message: 'User logged in successfully',
       });
 
       const sendLoginResponse = (canCreateEvent) => {
@@ -186,6 +227,12 @@ const verify2FA = async (req, res) => {
 
   userModel.getUserById(userId, async (err, result) => {
     if (err || !result || result.length === 0) {
+      logSecurityEvent('2FA_VERIFICATION_FAILED', {
+        userId,
+        ip: getClientIp(req),
+        status: 'FAILED',
+        message: '2FA failed - user not found',
+      });
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
@@ -196,10 +243,24 @@ const verify2FA = async (req, res) => {
     }
 
     if (!user.twoFactorCode || user.twoFactorCode !== code.toString().trim()) {
+      logSecurityEvent('2FA_VERIFICATION_FAILED', {
+        email: user.email,
+        userId: user.id,
+        ip: getClientIp(req),
+        status: 'FAILED',
+        message: 'Invalid 2FA verification code provided',
+      });
       return res.status(400).json({ success: false, message: 'Invalid verification code' });
     }
 
     if (new Date(user.twoFactorExpiresAt) < new Date()) {
+      logSecurityEvent('2FA_VERIFICATION_EXPIRED', {
+        email: user.email,
+        userId: user.id,
+        ip: getClientIp(req),
+        status: 'FAILED',
+        message: 'Expired 2FA verification code provided',
+      });
       return res.status(400).json({ success: false, message: 'Verification code has expired. Please log in again.' });
     }
 
@@ -214,18 +275,15 @@ const verify2FA = async (req, res) => {
       userModel.saveRefreshToken(user.id, refreshToken, expiresAt, (rfErr) => {
         if (rfErr) return res.status(500).json({ success: false, message: 'Server Error' });
 
-        res.cookie('accessToken', accessToken, {
-          httpOnly: true,
-          secure: false,
-          sameSite: 'lax',
-          maxAge: 15 * 60 * 1000,
-        });
+        res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
+        res.cookie('refreshToken', refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
 
-        res.cookie('refreshToken', refreshToken, {
-          httpOnly: true,
-          secure: false,
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000,
+        logSecurityEvent('2FA_VERIFICATION_SUCCESS', {
+          email: user.email,
+          userId: user.id,
+          ip: getClientIp(req),
+          status: 'SUCCESS',
+          message: '2FA code verified successfully',
         });
 
         const sendLoginResponse = (canCreateEvent) => {
@@ -276,6 +334,15 @@ const resend2FA = async (req, res) => {
     userModel.saveTwoFactorCode(user.id, code, expiresAt, async (tfErr) => {
       if (tfErr) return res.status(500).json({ success: false, message: 'Server Error' });
       await emailService.send2FACode(user.email, code);
+
+      logSecurityEvent('2FA_CODE_RESENT', {
+        email: user.email,
+        userId: user.id,
+        ip: getClientIp(req),
+        status: 'SUCCESS',
+        message: 'New 2FA code generated and resent',
+      });
+
       return res.status(200).json({
         success: true,
         message: 'A new 6-digit verification code has been sent to your email.',
@@ -310,12 +377,28 @@ const changePassword = async (req, res) => {
       const isMatch = await bcrypt.compare(currentPassword, user.password);
 
       if (!isMatch) {
+        logSecurityEvent('PASSWORD_CHANGE_FAILED', {
+          email: user.email,
+          userId,
+          ip: getClientIp(req),
+          status: 'FAILED',
+          message: 'Incorrect current password during password change attempt',
+        });
         return res.status(401).json({ success: false, message: 'Current password is incorrect' });
       }
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       userModel.updatePassword(userId, hashedPassword, (updateErr) => {
         if (updateErr) return res.status(500).json({ success: false, message: 'Server Error' });
+
+        logSecurityEvent('PASSWORD_CHANGE_SUCCESS', {
+          email: user.email,
+          userId,
+          ip: getClientIp(req),
+          status: 'SUCCESS',
+          message: 'User successfully changed account password',
+        });
+
         return res.status(200).json({ success: true, message: 'Password changed successfully' });
       });
     });
@@ -347,6 +430,13 @@ const changeEmail = async (req, res) => {
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (!isMatch) {
+        logSecurityEvent('EMAIL_CHANGE_FAILED', {
+          email: user.email,
+          userId,
+          ip: getClientIp(req),
+          status: 'FAILED',
+          message: 'Incorrect password during email change attempt',
+        });
         return res.status(401).json({ success: false, message: 'Password is incorrect' });
       }
 
@@ -359,6 +449,15 @@ const changeEmail = async (req, res) => {
 
         userModel.updateEmail(userId, newEmail, (updateErr) => {
           if (updateErr) return res.status(500).json({ success: false, message: 'Server Error' });
+
+          logSecurityEvent('EMAIL_CHANGE_SUCCESS', {
+            email: newEmail,
+            userId,
+            ip: getClientIp(req),
+            status: 'SUCCESS',
+            message: `User updated account email from ${user.email} to ${newEmail}`,
+          });
+
           return res.status(200).json({ success: true, message: 'Email address updated successfully', email: newEmail });
         });
       });
@@ -386,12 +485,28 @@ const toggle2FA = async (req, res) => {
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (!isMatch) {
+        logSecurityEvent('TOGGLE_2FA_FAILED', {
+          email: user.email,
+          userId,
+          ip: getClientIp(req),
+          status: 'FAILED',
+          message: 'Incorrect password during 2FA toggle attempt',
+        });
         return res.status(401).json({ success: false, message: 'Account password is incorrect' });
       }
 
       const targetStatus = Boolean(enable);
       userModel.updateTwoFactorStatus(userId, targetStatus, (updateErr) => {
         if (updateErr) return res.status(500).json({ success: false, message: 'Server Error' });
+
+        logSecurityEvent('TOGGLE_2FA_SUCCESS', {
+          email: user.email,
+          userId,
+          ip: getClientIp(req),
+          status: 'SUCCESS',
+          message: `User ${targetStatus ? 'enabled' : 'disabled'} Two-Factor Authentication`,
+        });
+
         return res.status(200).json({
           success: true,
           message: `Two-Factor Authentication has been ${targetStatus ? 'enabled' : 'disabled'} successfully`,
@@ -412,8 +527,23 @@ const requestPasswordReset = async (req, res) => {
     }
 
     userModel.getUserByEmail(email, async (err, result) => {
-      if (err || !result || result.length === 0) {
-        return res.status(404).json({ success: false, message: 'No account found with this email address' });
+      if (err) {
+        return res.status(500).json({ success: false, message: 'Server Error' });
+      }
+
+      // Mitigation for Account Enumeration: Return generic 200 success even if email not found
+      if (result.length === 0) {
+        logSecurityEvent('PASSWORD_RESET_REQUEST_UNREGISTERED', {
+          email,
+          ip: getClientIp(req),
+          status: 'INFO',
+          message: 'Password reset requested for unregistered email',
+        });
+        return res.status(200).json({
+          success: true,
+          message: 'A 6-digit verification code has been sent to your email (Valid for 5 minutes).',
+          email,
+        });
       }
 
       const user = result[0];
@@ -425,6 +555,15 @@ const requestPasswordReset = async (req, res) => {
           return res.status(500).json({ success: false, message: 'Server Error' });
         }
         await emailService.sendResetPasswordCode(user.email, code);
+
+        logSecurityEvent('PASSWORD_RESET_REQUEST_SUCCESS', {
+          email: user.email,
+          userId: user.id,
+          ip: getClientIp(req),
+          status: 'SUCCESS',
+          message: 'Password reset code generated and sent via email',
+        });
+
         return res.status(200).json({
           success: true,
           message: 'A 6-digit verification code has been sent to your email (Valid for 5 minutes).',
@@ -454,17 +593,41 @@ const resetPasswordWithCode = async (req, res) => {
     }
 
     userModel.getUserByEmail(email, async (err, result) => {
-      if (err || !result || result.length === 0) {
-        return res.status(404).json({ success: false, message: 'User not found' });
+      if (err) {
+        return res.status(500).json({ success: false, message: 'Server Error' });
+      }
+
+      if (result.length === 0) {
+        logSecurityEvent('PASSWORD_RESET_FAILED', {
+          email,
+          ip: getClientIp(req),
+          status: 'FAILED',
+          message: 'Password reset failed - email not found',
+        });
+        return res.status(400).json({ success: false, message: 'Invalid or expired verification code' });
       }
 
       const user = result[0];
 
       if (!user.resetCode || user.resetCode !== code.toString().trim()) {
-        return res.status(400).json({ success: false, message: 'Invalid verification code' });
+        logSecurityEvent('PASSWORD_RESET_FAILED', {
+          email: user.email,
+          userId: user.id,
+          ip: getClientIp(req),
+          status: 'FAILED',
+          message: 'Invalid password reset code provided',
+        });
+        return res.status(400).json({ success: false, message: 'Invalid or expired verification code' });
       }
 
       if (new Date(user.resetExpiresAt) < new Date()) {
+        logSecurityEvent('PASSWORD_RESET_EXPIRED', {
+          email: user.email,
+          userId: user.id,
+          ip: getClientIp(req),
+          status: 'FAILED',
+          message: 'Expired password reset code provided',
+        });
         return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new code.' });
       }
 
@@ -474,6 +637,15 @@ const resetPasswordWithCode = async (req, res) => {
 
         userModel.clearResetCode(user.id, (clearErr) => {
           if (clearErr) console.warn('Failed to clear reset code:', clearErr);
+
+          logSecurityEvent('PASSWORD_RESET_SUCCESS', {
+            email: user.email,
+            userId: user.id,
+            ip: getClientIp(req),
+            status: 'SUCCESS',
+            message: 'User successfully reset password using 6-digit OTP code',
+          });
+
           return res.status(200).json({
             success: true,
             message: 'Password reset successfully! You can now sign in with your new password.',
@@ -522,12 +694,7 @@ const me = (req, res) => {
 
     // Refresh accessToken cookie if role changed
     const freshAccessToken = generateAccessToken(user);
-    res.cookie('accessToken', freshAccessToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
-    });
+    res.cookie('accessToken', freshAccessToken, getCookieOptions(15 * 60 * 1000));
 
     const sendResponse = (canCreateEvent) => {
       return res.status(200).json({
@@ -575,6 +742,11 @@ const refreshToken = (req, res) => {
     }
 
     if (result.length === 0) {
+      logSecurityEvent('REFRESH_TOKEN_INVALID', {
+        ip: getClientIp(req),
+        status: 'WARN',
+        message: 'Invalid refresh token presented',
+      });
       return res.status(401).json({
         success: false,
         message: 'Invalid refresh token',
@@ -589,18 +761,18 @@ const refreshToken = (req, res) => {
         role: result[0].role,
       });
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        maxAge: 15 * 60 * 1000,
-      });
+      res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
 
       return res.status(200).json({
         success: true,
         message: 'Access token refreshed',
       });
     } catch (error) {
+      logSecurityEvent('REFRESH_TOKEN_EXPIRED', {
+        ip: getClientIp(req),
+        status: 'WARN',
+        message: 'Expired refresh token presented',
+      });
       return res.status(401).json({
         success: false,
         message: 'Refresh token expired',
@@ -608,10 +780,6 @@ const refreshToken = (req, res) => {
     }
   });
 };
-
-
-
-
 
 const logout = (req, res) => {
   userModel.clearRefreshToken(req.user.id, (err) => {
@@ -622,18 +790,22 @@ const logout = (req, res) => {
       });
     }
 
-     res.clearCookie('accessToken');
+    res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
-    
+
+    logSecurityEvent('LOGOUT_SUCCESS', {
+      userId: req.user.id,
+      ip: getClientIp(req),
+      status: 'SUCCESS',
+      message: 'User logged out successfully',
+    });
+
     res.status(200).json({
       success: true,
       message: 'Logout successful',
     });
-
-
-  })
-}
-
+  });
+};
 
 module.exports = {
   register,
@@ -649,4 +821,3 @@ module.exports = {
   requestPasswordReset,
   resetPasswordWithCode,
 };
-

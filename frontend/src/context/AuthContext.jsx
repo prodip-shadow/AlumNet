@@ -49,7 +49,14 @@ export function AuthProvider({ children }) {
     const handleUnauthorized = () => {
       setUser(null);
       setIsDeactivated(false);
-      router.push('/login');
+      if (typeof window !== 'undefined') {
+        const publicPaths = ['/', '/login', '/register', '/forgot-password', '/alumni', '/events', '/opportunities'];
+        const currentPath = window.location.pathname;
+        const isPublic = publicPaths.some((p) => currentPath === p || currentPath.startsWith(p));
+        if (!isPublic) {
+          router.push('/login');
+        }
+      }
     };
 
     const handleDeactivated = () => {

@@ -31,6 +31,10 @@ const adminRoutes = require('./routes/admin.route');
 const path = require('path');
 
 const app = express();
+
+// Trust reverse proxy headers (Nginx, Cloudflare, AWS ALB, Render) for accurate client IP detection & rate limiting
+app.set('trust proxy', 1);
+
 app.use(
   helmet({
     contentSecurityPolicy: false,

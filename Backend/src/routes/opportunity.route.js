@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const opportunityController = require('../controllers/opportunity.controller');
-const { verifyToken } = require('../middlewares/auth.middleware');
+const { verifyToken, optionalVerifyToken } = require('../middlewares/auth.middleware');
 const { allowRoles } = require('../middlewares/role.middleware');
 const { uploadSingleCv } = require('../middlewares/upload.middleware');
 
@@ -17,7 +17,7 @@ router.post(
 // Browse Opportunities Feed (ACTIVE only)
 router.get(
   '/',
-  verifyToken,
+  optionalVerifyToken,
   opportunityController.getAllOpportunities,
 );
 
@@ -47,7 +47,7 @@ router.get(
 // Get Opportunity By ID (Restricted if CLOSED)
 router.get(
   '/:id',
-  verifyToken,
+  optionalVerifyToken,
   opportunityController.getOpportunityById,
 );
 

@@ -56,6 +56,41 @@ const verifyToken = (req, res, next) => {
   }
 };
 
+const optionalVerifyToken = (req, res, next) => {
+  const token = req.cookies.accessToken;
+
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    userModel.getUserById(decoded.id, (err, result) => {
+      if (err || !result || result.length === 0 || !result[0].isActive) {
+        req.user = null;
+        return next();
+      }
+
+      const dbUser = result[0];
+      req.user = {
+        id: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        role: dbUser.role,
+      };
+
+      next();
+    });
+  } catch (error) {
+    req.user = null;
+    next();
+  }
+};
+
 module.exports = {
   verifyToken,
+  optionalVerifyToken,
 };
+
