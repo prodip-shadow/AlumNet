@@ -85,6 +85,8 @@ const updateStudentProfile = (userId, data, callback) => {
   const sql = `
     UPDATE student_profiles
     SET
+      facultyId = ?,
+      departmentId = ?,
       bio = ?,
       careerInterests = ?,
       githubLink = ?,
@@ -107,6 +109,8 @@ const updateAlumniProfile = (userId, data, callback) => {
   const sql = `
     UPDATE alumni_profiles
     SET
+      facultyId = ?,
+      departmentId = ?,
       bio = ?,
       currentPosition = ?,
       currentCompany = ?,

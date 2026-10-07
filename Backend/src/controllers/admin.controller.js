@@ -150,7 +150,7 @@ const toggleUserStatus = (req, res) => {
   const { id } = req.params;
   const targetUserId = Number(id);
   const adminUserId = req.user.id;
-  const { isActive } = req.body;
+  const { isActive } = req.body || {};
 
   if (!targetUserId || isNaN(targetUserId)) {
     return res.status(400).json({
@@ -166,14 +166,9 @@ const toggleUserStatus = (req, res) => {
     });
   }
 
-  if (typeof isActive !== 'boolean') {
-    return res.status(400).json({
-      success: false,
-      message: 'isActive field must be a boolean (true or false)',
-    });
-  }
+  const targetStatus = typeof isActive === 'boolean' ? isActive : undefined;
 
-  adminModel.updateUserStatus(targetUserId, isActive, (err, result) => {
+  adminModel.updateUserStatus(targetUserId, targetStatus, (err, result) => {
     if (err) {
       return res.status(500).json({
         success: false,
@@ -181,16 +176,19 @@ const toggleUserStatus = (req, res) => {
       });
     }
 
-    if (result.affectedRows === 0) {
+    if (!result || result.affectedRows === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
 
+    const finalIsActive = result.isActive;
+
     return res.status(200).json({
       success: true,
-      message: `User account ${isActive ? 'activated' : 'deactivated'} successfully`,
+      message: `User account ${finalIsActive ? 'activated' : 'deactivated'} successfully`,
+      isActive: finalIsActive,
     });
   });
 };

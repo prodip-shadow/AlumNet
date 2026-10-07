@@ -13,6 +13,7 @@ router.get('/:id', adminController.getFullUserDetails);
 router.put('/:id', adminController.updateUserProfile);
 router.patch('/:id/role', adminController.changeUserRole);
 router.patch('/:id/status', adminController.toggleUserStatus);
+router.patch('/:id/toggle-status', adminController.toggleUserStatus);
 router.delete('/:id', adminController.deleteUser);
 
 module.exports = router;

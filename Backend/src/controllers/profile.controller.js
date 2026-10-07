@@ -199,6 +199,8 @@ const updateMyProfile = (req, res) => {
 
   if (user.role === 'STUDENT') {
     const {
+      facultyId,
+      departmentId,
       bio,
       careerInterests,
       githubLink,
@@ -212,6 +214,8 @@ const updateMyProfile = (req, res) => {
       skills,
     } = req.body;
 
+    const cleanFacultyId = facultyId ? Number(facultyId) : null;
+    const cleanDepartmentId = departmentId ? Number(departmentId) : null;
     const cleanGithubLink = githubLink?.trim() || null;
     const cleanLinkedinLink = linkedinLink?.trim() || null;
     const cleanFacebookLink = facebookLink?.trim() || null;
@@ -226,6 +230,8 @@ const updateMyProfile = (req, res) => {
       profileModel.updateStudentProfile(
         user.id,
         [
+          cleanFacultyId,
+          cleanDepartmentId,
           bio,
           careerInterests,
           cleanGithubLink,
@@ -262,6 +268,8 @@ const updateMyProfile = (req, res) => {
 
   if (user.role === 'ALUMNI') {
     const {
+      facultyId,
+      departmentId,
       bio,
       currentPosition,
       currentCompany,
@@ -277,6 +285,8 @@ const updateMyProfile = (req, res) => {
       skills,
     } = req.body;
 
+    const cleanFacultyId = facultyId ? Number(facultyId) : null;
+    const cleanDepartmentId = departmentId ? Number(departmentId) : null;
     const cleanGithubLink = githubLink?.trim() || null;
     const cleanLinkedinLink = linkedinLink?.trim() || null;
     const cleanFacebookLink = facebookLink?.trim() || null;
@@ -291,6 +301,8 @@ const updateMyProfile = (req, res) => {
       profileModel.updateAlumniProfile(
         user.id,
         [
+          cleanFacultyId,
+          cleanDepartmentId,
           bio,
           cleanCurrentPosition,
           cleanCurrentCompany,

@@ -320,7 +320,12 @@ const AdminDashboard = () => {
   const [deletingAdminUserId, setDeletingAdminUserId] = useState(null);
 
   const handleDeleteUser = async (userId, userName) => {
-    if (!window.confirm(`Are you sure you want to permanently delete the account of "${userName}"? This cannot be undone.`)) return;
+    const isConfirmed = await confirmAlert({
+      title: 'Delete User Account?',
+      text: `Are you sure you want to permanently delete the account of "${userName}"? This cannot be undone.`,
+      confirmButtonText: 'Yes, Delete Account',
+    });
+    if (!isConfirmed) return;
     setDeletingAdminUserId(userId);
     try {
       const res = await api.delete(`/api/admin/users/${userId}`);
@@ -469,11 +474,16 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteFaculty = async (facId) => {
-    if (!confirm('Are you sure you want to delete this faculty?')) return;
+    const isConfirmed = await confirmAlert({
+      title: 'Delete Faculty?',
+      text: 'Are you sure you want to delete this faculty? Users assigned to this faculty will have their faculty and department cleared.',
+      confirmButtonText: 'Yes, Delete Faculty',
+    });
+    if (!isConfirmed) return;
     try {
       const res = await api.delete(`/api/faculties/${facId}`);
       if (res.data?.success) {
-        showFeedback('success', 'Faculty deleted');
+        showFeedback('success', 'Faculty deleted successfully');
         fetchAcademics();
       }
     } catch (err) {
@@ -504,11 +514,16 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteDepartment = async (deptId) => {
-    if (!confirm('Are you sure you want to delete this department?')) return;
+    const isConfirmed = await confirmAlert({
+      title: 'Delete Department?',
+      text: 'Are you sure you want to delete this department? Users assigned to this department will have their department cleared.',
+      confirmButtonText: 'Yes, Delete Department',
+    });
+    if (!isConfirmed) return;
     try {
       const res = await api.delete(`/api/departments/${deptId}`);
       if (res.data?.success) {
-        showFeedback('success', 'Department deleted');
+        showFeedback('success', 'Department deleted successfully');
         fetchAcademics();
       }
     } catch (err) {

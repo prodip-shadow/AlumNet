@@ -40,6 +40,12 @@ export default function ProfilePage() {
   const fileInputRef = useRef(null);
   const [uploadingPic, setUploadingPic] = useState(false);
 
+  // Academics State
+  const [faculties, setFaculties] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [facultyId, setFacultyId] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+
   // Form State
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -63,15 +69,19 @@ export default function ProfilePage() {
     setLoading(true);
     setName(user.name || '');
     try {
-      const [profRes, skillsRes] = await Promise.allSettled([
+      const [profRes, skillsRes, facRes, deptRes] = await Promise.allSettled([
         api.get('/api/profile/me'),
         api.get('/api/skills'),
+        api.get('/api/faculties'),
+        api.get('/api/departments'),
       ]);
 
       if (profRes.status === 'fulfilled' && profRes.value.data?.success) {
         const p = profRes.value.data.profile || {};
         setProfile(p);
         if (p.name) setName(p.name);
+        setFacultyId(p.facultyId ? String(p.facultyId) : '');
+        setDepartmentId(p.departmentId ? String(p.departmentId) : '');
         setBio(p.bio || '');
         setCurrentPosition(p.currentPosition || '');
         setCurrentCompany(p.currentCompany || '');
@@ -88,6 +98,12 @@ export default function ProfilePage() {
       if (skillsRes.status === 'fulfilled' && skillsRes.value.data?.success) {
         setAllSkills(skillsRes.value.data.skills || []);
       }
+      if (facRes.status === 'fulfilled' && facRes.value.data?.success) {
+        setFaculties(facRes.value.data.faculties || []);
+      }
+      if (deptRes.status === 'fulfilled' && deptRes.value.data?.success) {
+        setDepartments(deptRes.value.data.departments || []);
+      }
     } catch (err) {
       console.warn('Error fetching profile:', err);
     } finally {
@@ -98,6 +114,11 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  // Filtered Departments based on selected faculty
+  const filteredDepartments = facultyId
+    ? departments.filter((d) => Number(d.facultyId) === Number(facultyId))
+    : [];
 
   // Handle Profile Picture Upload
   const handlePictureChange = async (e) => {
@@ -136,6 +157,8 @@ export default function ProfilePage() {
     try {
       const payload = {
         name: name.trim(),
+        facultyId: facultyId ? Number(facultyId) : null,
+        departmentId: departmentId ? Number(departmentId) : null,
         bio,
         currentPosition,
         currentCompany,
@@ -310,6 +333,16 @@ export default function ProfilePage() {
               <span>{user.email}</span>
             </p>
 
+            {(profile?.facultyName || profile?.departmentName) && (
+              <p className="text-xs text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5">
+                <Building className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>
+                  {profile.facultyName || 'No Faculty'}
+                  {profile.departmentName ? ` — ${profile.departmentName}` : ''}
+                </span>
+              </p>
+            )}
+
             {(currentPosition || currentCompany) && (
               <p className="text-xs font-medium text-foreground flex items-center justify-center sm:justify-start gap-1.5">
                 <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -336,6 +369,61 @@ export default function ProfilePage() {
 
       {/* Edit Profile Form */}
       <form onSubmit={handleSave} className="space-y-6">
+        {/* Academic Information (Faculty & Department) Card */}
+        <Card className="border border-border bg-card p-5 sm:p-6 rounded-2xl shadow-2xs space-y-4">
+          <div className="border-b border-border pb-3">
+            <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-primary" />
+              <span>Academic Information</span>
+            </h3>
+            <p className="text-xs text-muted-foreground">Select your Faculty and Department.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+            <div>
+              <label className="font-semibold block mb-1">Faculty</label>
+              <select
+                value={facultyId}
+                onChange={(e) => {
+                  setFacultyId(e.target.value);
+                  setDepartmentId('');
+                }}
+                className="w-full h-9 px-3 text-xs bg-background border border-border rounded-xl text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="">-- Select Faculty --</option>
+                {faculties.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="font-semibold block mb-1">Department</label>
+              <select
+                value={departmentId}
+                onChange={(e) => setDepartmentId(e.target.value)}
+                disabled={!facultyId || filteredDepartments.length === 0}
+                className="w-full h-9 px-3 text-xs bg-background border border-border rounded-xl text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {!facultyId
+                    ? '-- Select Faculty First --'
+                    : filteredDepartments.length === 0
+                    ? '-- No Departments Available --'
+                    : '-- Select Department --'}
+                </option>
+                {filteredDepartments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </Card>
+
         <Card className="border border-border bg-card p-5 sm:p-6 rounded-2xl shadow-2xs space-y-4">
           <div className="border-b border-border pb-3">
             <h3 className="font-bold text-sm text-foreground">Personal & Professional Info</h3>

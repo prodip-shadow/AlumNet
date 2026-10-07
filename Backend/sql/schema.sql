@@ -53,7 +53,7 @@ CREATE TABLE verification_applications (
 
     registrationNumber VARCHAR(50) NOT NULL,
 
-    facultyId INT NOT NULL,
+    facultyId INT DEFAULT NULL,
 
     departmentId INT DEFAULT NULL,
 
@@ -108,7 +108,7 @@ CREATE TABLE student_profiles (
 
     registrationNumber VARCHAR(50) NOT NULL,
 
-    facultyId INT NOT NULL,
+    facultyId INT DEFAULT NULL,
 
     departmentId INT DEFAULT NULL,
 
@@ -166,7 +166,7 @@ CREATE TABLE alumni_profiles (
 
     registrationNumber VARCHAR(50) NOT NULL,
 
-    facultyId INT NOT NULL,
+    facultyId INT DEFAULT NULL,
 
     departmentId INT DEFAULT NULL,
 
@@ -742,3 +742,12 @@ ALTER TABLE opportunity_applications ADD COLUMN portfolioUrl VARCHAR(500) DEFAUL
 
 -- Event Registrations Status Update (PENDING, ACCEPTED, REJECTED)
 ALTER TABLE event_registrations MODIFY COLUMN registrationStatus ENUM('PENDING', 'ACCEPTED', 'REJECTED', 'REGISTERED', 'ATTENDED', 'CANCELLED', 'FAILED') DEFAULT 'PENDING';
+
+-- Faculty & Department Nullability Updates on Delete
+ALTER TABLE verification_applications MODIFY COLUMN facultyId INT DEFAULT NULL;
+ALTER TABLE student_profiles MODIFY COLUMN facultyId INT DEFAULT NULL;
+ALTER TABLE alumni_profiles MODIFY COLUMN facultyId INT DEFAULT NULL;
+
+ALTER TABLE verification_applications ADD CONSTRAINT fk_va_faculty FOREIGN KEY (facultyId) REFERENCES faculties(id) ON DELETE SET NULL, ADD CONSTRAINT fk_va_department FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;
+ALTER TABLE student_profiles ADD CONSTRAINT fk_sp_faculty FOREIGN KEY (facultyId) REFERENCES faculties(id) ON DELETE SET NULL, ADD CONSTRAINT fk_sp_department FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;
+ALTER TABLE alumni_profiles ADD CONSTRAINT fk_ap_faculty FOREIGN KEY (facultyId) REFERENCES faculties(id) ON DELETE SET NULL, ADD CONSTRAINT fk_ap_department FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;

@@ -547,10 +547,27 @@ const changeUserRoleTransaction = (targetUserId, newRole, adminUserId, callback)
   });
 };
 
-// Update User Account Active Status
+// Update User Account Active Status (supports explicit boolean or toggling)
 const updateUserStatus = (targetUserId, isActive, callback) => {
-  const sql = `UPDATE users SET isActive = ? WHERE id = ?`;
-  db.query(sql, [isActive, targetUserId], callback);
+  if (typeof isActive === 'boolean') {
+    const sql = `UPDATE users SET isActive = ? WHERE id = ?`;
+    db.query(sql, [isActive, targetUserId], (err, result) => {
+      if (err) return callback(err);
+      return callback(null, { affectedRows: result.affectedRows, isActive });
+    });
+  } else {
+    const sql = `UPDATE users SET isActive = NOT isActive WHERE id = ?`;
+    db.query(sql, [targetUserId], (err, result) => {
+      if (err) return callback(err);
+      if (result.affectedRows === 0) {
+        return callback(null, { affectedRows: 0 });
+      }
+      db.query(`SELECT isActive FROM users WHERE id = ?`, [targetUserId], (err, rows) => {
+        if (err) return callback(err);
+        return callback(null, { affectedRows: result.affectedRows, isActive: Boolean(rows[0]?.isActive) });
+      });
+    });
+  }
 };
 
 // Delete User Transaction (Handling all non-cascading FK references)
