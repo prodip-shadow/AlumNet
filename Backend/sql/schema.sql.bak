@@ -53,7 +53,7 @@ CREATE TABLE verification_applications (
 
     registrationNumber VARCHAR(50) NOT NULL,
 
-    facultyId INT NOT NULL,
+    facultyId INT DEFAULT NULL,
 
     departmentId INT DEFAULT NULL,
 
@@ -108,7 +108,7 @@ CREATE TABLE student_profiles (
 
     registrationNumber VARCHAR(50) NOT NULL,
 
-    facultyId INT NOT NULL,
+    facultyId INT DEFAULT NULL,
 
     departmentId INT DEFAULT NULL,
 
@@ -166,7 +166,7 @@ CREATE TABLE alumni_profiles (
 
     registrationNumber VARCHAR(50) NOT NULL,
 
-    facultyId INT NOT NULL,
+    facultyId INT DEFAULT NULL,
 
     departmentId INT DEFAULT NULL,
 
@@ -487,7 +487,9 @@ CREATE TABLE opportunity_applications (
 
     cvUrl VARCHAR(500) DEFAULT NULL,
 
-    status ENUM('APPLIED', 'SHORTLISTED', 'SELECTED', 'REJECTED') DEFAULT 'APPLIED',
+    portfolioUrl VARCHAR(500) DEFAULT NULL,
+
+    status ENUM('APPLIED', 'SHORTLISTED', 'SELECTED', 'REJECTED', 'ACCEPTED') DEFAULT 'APPLIED',
 
     message TEXT DEFAULT NULL,
 
@@ -729,3 +731,27 @@ CREATE TABLE alumni_migration_applications (
 
 CREATE INDEX idx_ama_userId ON alumni_migration_applications(userId);
 CREATE INDEX idx_ama_status ON alumni_migration_applications(status);
+
+-- ===================================================
+-- SCHEMA MIGRATIONS / ALTER QUERIES
+-- ===================================================
+
+-- Opportunity Applications Updates (ACCEPTED status & portfolioUrl)
+ALTER TABLE opportunity_applications MODIFY COLUMN status ENUM('APPLIED', 'SHORTLISTED', 'SELECTED', 'REJECTED', 'ACCEPTED') DEFAULT 'APPLIED';
+ALTER TABLE opportunity_applications ADD COLUMN portfolioUrl VARCHAR(500) DEFAULT NULL AFTER cvUrl;
+
+-- Event Registrations Status Update (PENDING, ACCEPTED, REJECTED)
+ALTER TABLE event_registrations MODIFY COLUMN registrationStatus ENUM('PENDING', 'ACCEPTED', 'REJECTED', 'REGISTERED', 'ATTENDED', 'CANCELLED', 'FAILED') DEFAULT 'PENDING';
+
+-- Faculty & Department Nullability Updates on Delete
+ALTER TABLE verification_applications MODIFY COLUMN facultyId INT DEFAULT NULL;
+ALTER TABLE student_profiles MODIFY COLUMN facultyId INT DEFAULT NULL;
+ALTER TABLE alumni_profiles MODIFY COLUMN facultyId INT DEFAULT NULL;
+
+ALTER TABLE verification_applications ADD CONSTRAINT fk_va_faculty FOREIGN KEY (facultyId) REFERENCES faculties(id) ON DELETE SET NULL, ADD CONSTRAINT fk_va_department FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;
+ALTER TABLE student_profiles ADD CONSTRAINT fk_sp_faculty FOREIGN KEY (facultyId) REFERENCES faculties(id) ON DELETE SET NULL, ADD CONSTRAINT fk_sp_department FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;
+ALTER TABLE alumni_profiles ADD CONSTRAINT fk_ap_faculty FOREIGN KEY (facultyId) REFERENCES faculties(id) ON DELETE SET NULL, ADD CONSTRAINT fk_ap_department FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;
+
+-- 2FA and Reset Password Columns
+ALTER TABLE users ADD COLUMN isTwoFactorEnabled BOOLEAN DEFAULT FALSE, ADD COLUMN twoFactorCode VARCHAR(10) DEFAULT NULL, ADD COLUMN twoFactorExpiresAt DATETIME DEFAULT NULL;
+ALTER TABLE users ADD COLUMN resetCode VARCHAR(10) DEFAULT NULL, ADD COLUMN resetExpiresAt DATETIME DEFAULT NULL;
